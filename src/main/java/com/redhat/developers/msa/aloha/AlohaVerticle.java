@@ -16,19 +16,21 @@
  */
 package com.redhat.developers.msa.aloha;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.github.kennedyoliveira.hystrix.contrib.vertx.metricsstream.EventMetricsStreamHandler;
-
 import feign.Logger;
 import feign.Logger.Level;
 import feign.hystrix.HystrixFeign;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Context;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import rx.Observable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AlohaVerticle extends AbstractVerticle {
 
@@ -44,11 +46,7 @@ public class AlohaVerticle extends AbstractVerticle {
         });
 
         // Aloha Chained Endpoint
-        router.get("/api/aloha-chaining").handler(ctx -> {
-            addCORSHeaders(ctx.response())
-                .putHeader("Content-Type", "application/json")
-                .end(Json.encode(alohaChaining()));
-        });
+        router.get("/api/aloha-chaining").handler(this::alohaChaining);
 
         // Hysrix Stream Endpoint
         router.get(EventMetricsStreamHandler.DEFAULT_HYSTRIX_PREFIX)
@@ -58,16 +56,32 @@ public class AlohaVerticle extends AbstractVerticle {
         System.out.println("Service running at 0.0.0.0:8080");
     }
 
+    private void writeResponse(RoutingContext context, List<String> responses) {
+        addCORSHeaders(context.response())
+            .putHeader("Content-Type", "application/json")
+            .end(Json.encodePrettily(responses));
+
+    }
+
     private String aloha() {
         String hostname = System.getenv().getOrDefault("HOSTNAME", "unknown");
         return String.format("Aloha mai %s", hostname);
     }
 
-    private List<String> alohaChaining() {
-        List<String> greetings = new ArrayList<>();
-        greetings.add(aloha());
-        greetings.add(getNextService().bonjour());
-        return greetings;
+    private void alohaChaining(RoutingContext rc) {
+        // Here it's a bit more complicated because of Hystrix calling the subscriber in its own thread.
+        // We have to capture the current context to write the response in the same context.
+        // The subscriber is invoked in a Hystrix Thread. That least to scalability issue, as we may suffer from
+        // starvation.
+        Context context = vertx.getOrCreateContext();
+        getNextService().bonjour().subscribe(s -> {
+            context.runOnContext(v -> {
+                List<String> greetings = new ArrayList<>();
+                greetings.add(aloha());
+                greetings.add(s);
+                writeResponse(rc, greetings);
+            });
+        });
     }
 
     /**
@@ -80,7 +94,7 @@ public class AlohaVerticle extends AbstractVerticle {
         return HystrixFeign.builder()
             .logger(new Logger.ErrorLogger()).logLevel(Level.BASIC)
             .target(BonjourService.class, "http://bonjour:8080/",
-                () -> "Bonjour response (fallback)");
+                () -> Observable.just("Bonjour response (fallback)"));
     }
 
     private HttpServerResponse addCORSHeaders(HttpServerResponse response) {

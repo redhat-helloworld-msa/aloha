@@ -17,10 +17,16 @@
 package com.redhat.developers.msa.aloha;
 
 import feign.RequestLine;
+import rx.Observable;
 
 public interface BonjourService {
 
-	@RequestLine("GET /api/bonjour")
-	public String bonjour();
+
+  /**
+   * To be invoked asynchronously and in a non-blocking fashion, we have to use an Observable here (because of Hystrix)
+   * @return an observable to get the response
+   */
+  @RequestLine("GET /api/bonjour")
+  Observable<String> bonjour();
 
 }

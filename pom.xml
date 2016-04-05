@@ -60,6 +60,12 @@
 			<version>${netflix.feign.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>io.reactivex</groupId>
+			<artifactId>rxjava</artifactId>
+			<version>1.1.2</version>
+		</dependency>
+
 		<!-- Vertx Hystrix Stream -->
 		<dependency>
 			<groupId>com.github.kennedyoliveira</groupId>
