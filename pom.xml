@@ -102,6 +102,42 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.14.2</version>
+				<configuration>
+					<images>
+						<image>
+							<name>redhatmsa/aloha</name>
+							<build>
+								<from>jboss/base-jdk:8</from>
+								<assembly>
+									<inline>
+										<files>
+											<file>
+												<source>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</source>
+												<destName>aloha.jar</destName>
+											</file>
+										</files>
+									</inline>
+								</assembly>
+								<cmd><shell>java -jar /maven/aloha.jar</shell></cmd>
+							</build>
+							<!-- Optional <run> section, can be omitted.
+							     Call 'mvn docker:start' to start and 'docker ps' to get the dynamic port.
+							     'mvn docker:stop' to stop ip, '-Ddocker.follow' to let start run in the foreground -->
+							<run>
+								<ports>
+									<!-- Property ${aloha.port} will be set with dynamic port,
+									     could be used in integration tests-->
+									<port>${aloha.port}:8080</port>
+								</ports>
+							</run>
+						</image>
+					</images>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
