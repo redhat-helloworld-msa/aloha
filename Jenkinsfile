@@ -57,7 +57,7 @@ def projectSet(String project){
 
 // Deploy the project based on a existing ImageStream
 def appDeploy(){
-    sh "oc new-app --image-stream aloha -l app=aloha,hystrix.enabled=true || echo 'Aplication already Exists'"
+    sh "oc new-app --image-stream aloha -l app=aloha,hystrix.enabled=true,group=msa,project=aloha,provider=fabric8 || echo 'Aplication already Exists'"
     sh "oc expose service aloha || echo 'Service already exposed'"
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","ports":[{"containerPort": 8778,"name":"jolokia"}]}]}}}}\''
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","readinessProbe":{"httpGet":{"path":"/api/health","port":8080}}}]}}}}\''
