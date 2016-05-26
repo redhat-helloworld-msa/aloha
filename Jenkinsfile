@@ -1,7 +1,7 @@
 node {
     stage 'Git checkout'
     echo 'Checking out git repository'
-    git url: 'https://github.com/redhat-helloworld-msa/aloha'
+    git url: 'https://github.com/eformat/aloha'
 
     stage 'Build project with Maven'
     echo 'Building project'
@@ -49,7 +49,7 @@ def deployAloha(String origProject, String project){
 def projectSet(String project){
     //Use a credential called openshift-dev
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'openshift-dev', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-        sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://10.1.2.2:8443"
+        sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://ose-master.hosts.example.com:8443"
     }
     sh "oc new-project ${project} || echo 'Project exists'"
     sh "oc project ${project}"
