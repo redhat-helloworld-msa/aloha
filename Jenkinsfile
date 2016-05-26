@@ -26,7 +26,7 @@ node {
 
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployAloha('helloworld-msa-dev', 'helloworld-msa')
+    deployAloha('helloworld-msa-dev', 'redhatmsa')
 }
 
 // Creates a Build and triggers it
