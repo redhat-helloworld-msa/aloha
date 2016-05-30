@@ -42,9 +42,9 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // tag to qa
     projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
+    sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project} -n ${origProject}"
     // create upstream project
     projectSet(project, credentialsId)
-    sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project} -n ${origProject}"
     // deploy to upstream project
     appDeploy()
 }
