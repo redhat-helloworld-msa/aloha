@@ -40,7 +40,7 @@ def buildAloha(String project, String credentialsId){
 // Tag the ImageStream from an original project to force a deployment
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
     // tag to qa
-    projectSet(origProject, credentialsId)
+    projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
     // create upstream project
     projectSet(project, credentialsId)
