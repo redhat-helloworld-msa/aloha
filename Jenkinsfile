@@ -34,7 +34,7 @@ def buildAloha(String project, String credentialsId){
     projectSet(project, credentialsId)
     sh "oc new-build --binary --name=aloha -l app=aloha || echo 'Build exists'"
     sh "oc start-build aloha --from-dir=. --follow"
-    appDeploy()
+    appDeploy(project, 'latest')
 }
 
 // Tag the ImageStream from an original project to force a deployment
@@ -54,7 +54,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // change to upstream project
     projectSet(project, credentialsId)
     // deploy to upstream project
-    appDeploy(origPorject)
+    appDeploy(origProject, 'promote')
 }
 
 // Login and set the project
@@ -68,8 +68,8 @@ def projectSet(String project, String credentialsId){
 }
 
 // Deploy the project based on a existing ImageStream
-def appDeploy(String project){
-    sh "oc new-app --image-stream ${project}/aloha:promote -l app=aloha,hystrix.enabled=true,group=msa,project=aloha,provider=fabric8 || echo 'Aplication already Exists'"
+def appDeploy(String project, String tag){
+    sh "oc new-app --image-stream ${project}/aloha:${tag} -l app=aloha,hystrix.enabled=true,group=msa,project=aloha,provider=fabric8 || echo 'Aplication already Exists'"
     sh "oc expose service aloha || echo 'Service already exposed'"
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","ports":[{"containerPort": 8778,"name":"jolokia"}]}]}}}}\''
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","readinessProbe":{"httpGet":{"path":"/api/health","port":8080}}}]}}}}\''
