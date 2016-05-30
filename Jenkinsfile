@@ -39,11 +39,19 @@ def buildAloha(String project, String credentialsId){
 
 // Tag the ImageStream from an original project to force a deployment
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
-    // tag to qa
+    // change to upstream project to get user
+    projectSet(project, credentialsId)
+    def upstraem-user =  sh "oc whoami"
+
+    echo "User is: ${upstream-user}"
+
+    // tag image
     projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project} -n ${origProject}"
-    // create upstream project
+    sh "oc policy add-role-to-user view ${upstream-user}"
+
+    // change to upstream project
     projectSet(project, credentialsId)
     // deploy to upstream project
     appDeploy()
@@ -53,7 +61,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
 def projectSet(String project, String credentialsId){
     //Use a credential called openshift-dev
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-    sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://ose-master.hosts.example.com:8443"
+        sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://ose-master.hosts.example.com:8443"
     }
     sh "oc new-project ${project} || echo 'Project exists'"
     sh "oc project ${project}"
