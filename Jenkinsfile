@@ -39,9 +39,6 @@ def buildAloha(String project, String credentialsId){
 
 // Tag the ImageStream from an original project to force a deployment
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
-    // change to upstream project to get user
-    projectSet(project, credentialsId)
-
     // tag image and give upstream project view and image pull access
     projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
@@ -53,7 +50,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
 
     // change to upstream project
     projectSet(project, credentialsId)
-    // deploy to upstream project
+    // deploy origproject image to upstream project
     appDeploy(origProject, 'promote')
 }
 
