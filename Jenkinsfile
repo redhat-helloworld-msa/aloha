@@ -41,7 +41,7 @@ def buildAloha(String project, String credentialsId){
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
     // change to upstream project to get user
     projectSet(project, credentialsId)
-    String upstream-user =  sh "oc whoami"
+    upstream-user = sh "oc whoami"
 
     echo "User is: ${upstream-user}"
 
