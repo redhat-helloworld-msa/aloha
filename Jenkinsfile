@@ -39,7 +39,7 @@ def buildAloha(String project, String credentialsId){
 
 // Tag the ImageStream from an original project to force a deployment
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
-    projectSet(project, origCredentialsId)
+    projectSet(origProject, origCredentialsId)
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
     sh "oc tag ${origProject}/aloha:latest ${project}/aloha:latest"
     projectSet(project, credentialsId)
