@@ -11,7 +11,7 @@ node {
 
     stage 'Build image and deploy in Dev'
     echo 'Building docker image and deploying to Dev'
-    buildAloha('helloworld-msa-dev')
+    buildAloha('helloworld-msa-dev', 'openshift-dev')
 
     stage 'Automated tests'
     echo 'This stage simulates automated tests'
@@ -19,36 +19,37 @@ node {
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
-    deployAloha('helloworld-msa-dev', 'helloworld-msa-qa')
+    deployAloha('helloworld-msa-dev', 'helloworld-msa-qa', 'openshift-dev', 'openshift-qa')
 
     stage 'Wait for approval'
     input 'Aprove to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployAloha('helloworld-msa-dev', 'redhatmsa')
+    deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod')
 }
 
 // Creates a Build and triggers it
-def buildAloha(String project){
-    projectSet(project)
+def buildAloha(String project, String credentialsId){
+    projectSet(project, credentialsId)
     sh "oc new-build --binary --name=aloha -l app=aloha || echo 'Build exists'"
     sh "oc start-build aloha --from-dir=. --follow"
     appDeploy()
 }
 
 // Tag the ImageStream from an original project to force a deployment
-def deployAloha(String origProject, String project){
-    projectSet(project)
+def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
+    projectSet(project, origCredentialsId)
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
     sh "oc tag ${origProject}/aloha:latest ${project}/aloha:latest"
+    projectSet(project, credentialsId)
     appDeploy()
 }
 
 // Login and set the project
-def projectSet(String project){
+def projectSet(String project, String credentialsId){
     //Use a credential called openshift-dev
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'openshift-dev', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: ${credentialsId}, usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://ose-master.hosts.example.com:8443"
     }
     sh "oc new-project ${project} || echo 'Project exists'"
