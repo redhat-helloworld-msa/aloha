@@ -41,15 +41,15 @@ def buildAloha(String project, String credentialsId){
 def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
     // change to upstream project to get user
     projectSet(project, credentialsId)
-    def upstreamUser = sh "oc whoami"
 
-    echo "User is: ${upstreamUser}"
-
-    // tag image
+    // tag image and give upstream project view and image pull access
     projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project} -n ${origProject}"
-    sh "oc policy add-role-to-user view ${upstreamUser}"
+
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+        sh "oc policy add-role-to-user view $env.USERNAME"
+    }
 
     // change to upstream project
     projectSet(project, credentialsId)
