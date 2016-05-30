@@ -44,10 +44,10 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // add pull access from test to dev
     projectSet(origProject, origCredentialsId)
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
+    projectSet(project, credentialsId)
     // tag to qa
     sh "oc tag ${origProject}/aloha:latest ${project}/aloha:latest"
     // deploy to qa
-    projectSet(project, credentialsId)
     appDeploy()
 }
 
