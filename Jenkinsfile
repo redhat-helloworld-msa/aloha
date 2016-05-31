@@ -19,14 +19,14 @@ node {
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
-    deployAloha('helloworld-msa-dev', 'helloworld-msa-qa', 'openshift-dev', 'openshift-qa')
+    deployAloha('helloworld-msa-dev', 'helloworld-msa-qa', 'openshift-dev', 'openshift-qa', 'promote')
 
     stage 'Wait for approval'
     input 'Aprove to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod')
+    deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod')
 }
 
 // Creates a Build and triggers it
@@ -38,10 +38,10 @@ def buildAloha(String project, String credentialsId){
 }
 
 // Tag the ImageStream from an original project to force a deployment
-def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId){
+def deployAloha(String origProject, String project, String origCredentialsId, String credentialsId, String tag){
     // tag image and give upstream project view and image pull access
     projectSet(origProject, origCredentialsId)
-    sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
+    sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:${tag}"
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
 
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
@@ -51,7 +51,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // change to upstream project
     projectSet(project, credentialsId)
     // deploy origproject image to upstream project
-    appDeploy(origProject, 'promote')
+    appDeploy(origProject, ${tag})
 }
 
 // Login and set the project
