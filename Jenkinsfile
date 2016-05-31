@@ -33,7 +33,7 @@ node {
 def buildAloha(String project, String credentialsId){
     projectSet(project, credentialsId)
     sh "oc new-build --binary --name=aloha -l app=aloha || echo 'Build exists'"
-    sh "oc start-build aloha --from-dir=. --follow"
+    sh "oc start-build aloha --from-dir=. --follow --wait=true"
     appDeploy(project, 'latest')
 }
 
