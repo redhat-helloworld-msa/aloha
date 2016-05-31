@@ -42,7 +42,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // tag image and give upstream project view and image pull access
     projectSet(origProject, origCredentialsId)
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:promote"
-    sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project} -n ${origProject}"
+    sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
 
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh "oc policy add-role-to-user view $env.USERNAME"
