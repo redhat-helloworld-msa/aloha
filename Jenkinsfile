@@ -51,7 +51,7 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     // change to upstream project
     projectSet(project, credentialsId)
     // deploy origproject image to upstream project
-    appDeploy(origProject, ${tag})
+    appDeploy(origProject, tag)
 }
 
 // Login and set the project
