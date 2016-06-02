@@ -9,6 +9,10 @@ node {
     echo 'Building project'
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
+    sh "${javaHome}/bin/java -version"
+
+    echo "Java OK"
+    
     sh "${mvnHome}/bin/mvn clean package"
 
     stage 'Build image and deploy in Dev'
