@@ -3,6 +3,8 @@ node {
     echo 'Checking out git repository'
     git url: 'https://github.com/eformat/aloha'
 
+    echo "OpenShift Master is: ${env.OPENSHIFT_MASTER}"
+
     stage 'Build project with Maven'
     echo 'Building project'
     def mvnHome = tool 'M3'
