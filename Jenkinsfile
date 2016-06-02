@@ -1,9 +1,11 @@
 node {
     stage 'Git checkout'
     echo 'Checking out git repository'
-    git url: 'https://github.com/eformat/aloha'
+    git url: 'https://github.com/eformat/aloha'    
 
-    echo "OpenShift Master is: ${env.OPENSHIFT_MASTER}"
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "openshift-dev", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD', descriptionVariable: 'DESCRIPTION']]) {
+        echo "OpenShift Master is: ${env.DESCRIPTION}"
+    }
 
     stage 'Build project with Maven'
     echo 'Building project'
