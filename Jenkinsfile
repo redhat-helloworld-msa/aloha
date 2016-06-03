@@ -46,10 +46,8 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
     sh "oc tag ${origProject}/aloha:latest ${origProject}/aloha:${tag}"
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
 
-    node {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-            sh "oc policy add-role-to-user view $env.USERNAME"
-        }
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+        sh "oc policy add-role-to-user view $env.USERNAME"
     }
 
     // change to upstream project
@@ -61,10 +59,8 @@ def deployAloha(String origProject, String project, String origCredentialsId, St
 // Login and set the project
 def projectSet(String project, String credentialsId){
     //Use a credential called openshift-dev
-    node {
-        withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-            sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://${OPENSHIFT_MASTER}"
-        }
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+        sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://${OPENSHIFT_MASTER}"
     }
     sh "oc new-project ${project} || echo 'Project exists'"
     sh "oc project ${project}"
