@@ -9,6 +9,7 @@ node {
     echo 'Building project'
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
+    def sonarHome = tool 'SQ'
     sh "${mvnHome}/bin/mvn clean package"
 
     stage 'Build image and deploy in Dev'
@@ -16,8 +17,23 @@ node {
     buildAloha('helloworld-msa-dev', 'openshift-dev')
 
     stage 'Automated tests'
-    echo 'This stage simulates automated tests'
-    sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+    parallel(
+        unitTests:{
+            echo 'This stage simulates automated unit tests'
+            sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+        }, sonarAnalysis: {
+            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
+                usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                echo 'run sonar tests'
+                sh 'sonar-scanner'
+                //sh 'mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar'
+            }
+        }, seleniumTests: {
+            echo 'This stage simulates web ui tests'
+            sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+        }, failFast: true
+    )
+    checkpoint 'Quality Analysis Complete'
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
