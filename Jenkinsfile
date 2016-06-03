@@ -9,7 +9,7 @@ node {
     echo 'Building project'
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
-    def sonarHome = tool 'SQ'
+    def sonarHome = '/var/lib/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SQ'
     sh "${mvnHome}/bin/mvn clean package"
 
     stage 'Build image and deploy in Dev'
