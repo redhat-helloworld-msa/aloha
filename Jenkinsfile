@@ -29,7 +29,7 @@ node {
     stage 'Deploy to production'
     echo 'Deploying to production'
     deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod')
-
+}
 
 // Creates a Build and triggers it
 def buildAloha(String project, String credentialsId){
