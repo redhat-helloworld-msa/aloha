@@ -34,8 +34,8 @@ node {
             echo 'This stage simulates web ui tests'
             sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
         }, owaspAnalysis: {
-            echo 'This stage checks dependencies for vulnerabilities - set not to wait() for results accordingly'
-            build: 'aloha-dependency-check', wait: false        
+            echo 'This stage checks dependencies for vulnerabilities'
+            build job: '../aloha-dependency-check/master', wait: true
         }, failFast: true
     )
 
