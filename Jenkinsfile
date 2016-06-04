@@ -35,7 +35,7 @@ node {
             sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
         }, owaspAnalysis: {
             echo 'This stage checks dependencies for vulnerabilities'
-            build job: 'aloha-dependency-check', wait: false
+            build job: 'aloha-dependency-check', wait: true
         }, failFast: true
     )
 
