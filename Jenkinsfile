@@ -9,7 +9,8 @@ node {
     echo 'Building project'
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
-    def sonarHome = '/var/lib/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SQ'
+    def sonarHome =  tool 'SQ'
+    //'/var/lib/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SQ'
     sh "${mvnHome}/bin/mvn clean package"
 
     stage 'Build image and deploy in Dev'
@@ -25,7 +26,7 @@ node {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 echo 'run sonar tests'
-                sh '${sonarHome}/bin/sonar-scanner'
+                sh "${sonarHome}/bin/sonar-scanner"
                 //sh 'mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar'
             }
         }, seleniumTests: {
