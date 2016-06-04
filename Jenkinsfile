@@ -26,7 +26,7 @@ node {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 echo 'run sonar tests'
-                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=aloha -Dsonar.projectName=aloha -Dsonar.host.url=http://172.30.104.32:9000"
+                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=aloha -Dsonar.projectName=aloha -Dsonar.host.url=http://172.30.104.32:9000 -Dsonar.login=admin -Dsonar.password=admin"
                 //sh 'mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar'
             }
         }, seleniumTests: {
