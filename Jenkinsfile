@@ -35,7 +35,6 @@ node {
             sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
         }, failFast: true
     )
-    checkpoint 'Quality Analysis Complete'
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
