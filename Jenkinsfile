@@ -3,14 +3,15 @@ node {
     echo 'Checking out git repository'
     git url: 'https://github.com/eformat/aloha'    
 
+    // environment variables and tools
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
-
-    stage 'Build project with Maven'
-    echo 'Building project'
+    echo "Sonarqube is: ${SONARQUBE}"
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
     def sonarHome =  tool 'SQ'
-    //'/var/lib/jenkins/tools/hudson.plugins.sonar.SonarRunnerInstallation/SQ'
+
+    stage 'Build project with Maven'
+    echo 'Building project'
     sh "${mvnHome}/bin/mvn clean package"
 
     stage 'Build image and deploy in Dev'
@@ -26,7 +27,7 @@ node {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 echo 'run sonar tests'
-                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=aloha -Dsonar.projectName=aloha -Dsonar.host.url=http://172.30.104.32:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
+                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=aloha -Dsonar.projectName=aloha -Dsonar.host.url=http://${SONARQUBE} -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
                 //sh 'mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar'
             }
         }, seleniumTests: {
