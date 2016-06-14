@@ -6,6 +6,9 @@ node {
     // environment variables and tools
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
+
+    echo "Token is:" . getToken('openshift-dev')
+
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
     def sonarHome =  tool 'SQ'
@@ -92,4 +95,23 @@ def appDeploy(String project, String tag){
     sh "oc expose service aloha || echo 'Service already exposed'"
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","ports":[{"containerPort": 8778,"name":"jolokia"}]}]}}}}\''
     sh 'oc patch dc/aloha -p \'{"spec":{"template":{"spec":{"containers":[{"name":"aloha","readinessProbe":{"httpGet":{"path":"/api/health","port":8080}}}]}}}}\''
+}
+
+// Get Token for Openshift Plugin authToken
+def getToken(String credentialsId){
+    withCredentials([[$class: 'UsernamePasswordBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+    sh '''
+      curl -v -XGET \\
+        --no-keepalive \\
+        -u "${credentialId}" \\
+        -H "X-Csrf-Token: 1" \\
+        "https://${OPENSHIFT_MASTER}:8443/oauth/authorize?response_type=token&client_id=openshift-challenging-client" \\
+        2>&1 | \\
+        grep 'Location: ' | \\
+        sed -E 's/.*access_token=([^&]+)&.*/\\1/' >token
+    '''
+    token = readFile 'token'
+    token = token.trim()
+    sh 'rm token'
+    return token
 }
