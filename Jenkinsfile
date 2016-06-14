@@ -100,8 +100,8 @@ def appDeploy(String project, String tag){
 // Get Token for Openshift Plugin authToken
 def getToken(String credentialsId){
     withCredentials([[$class: 'UsernamePasswordBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-    sh '''
-      curl -v -XGET \\
+        sh '''
+        curl -v -XGET \\
         --no-keepalive \\
         -u "${credentialId}" \\
         -H "X-Csrf-Token: 1" \\
@@ -109,9 +109,10 @@ def getToken(String credentialsId){
         2>&1 | \\
         grep 'Location: ' | \\
         sed -E 's/.*access_token=([^&]+)&.*/\\1/' >token
-    '''
-    token = readFile 'token'
-    token = token.trim()
-    sh 'rm token'
-    return token
+        '''
+        token = readFile 'token'
+        token = token.trim()
+        sh 'rm token'
+        return token
+     }
 }
