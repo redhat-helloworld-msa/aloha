@@ -7,7 +7,8 @@ node {
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
 
-    echo "Token is:" . getToken('openshift-dev')
+    echo "Token is:"
+    getToken('openshift-dev')
 
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
