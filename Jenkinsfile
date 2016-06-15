@@ -105,7 +105,7 @@ def getToken(String credentialsId){
             --no-keepalive \
             -u ${credentialsId} \
             -H 'X-Csrf-Token: 1' \
-            https://${OPENSHIFT_MASTER}:8443/oauth/authorize?response_type=token&client_id=openshift-challenging-client \
+            https://${OPENSHIFT_MASTER}/oauth/authorize?response_type=token&client_id=openshift-challenging-client \
             2>&1 | \
             grep 'Location: ' | \
             sed -E 's/.*access_token=([^&]+)&.*/\\1/' >token"
