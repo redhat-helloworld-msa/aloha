@@ -116,5 +116,5 @@ def getToken(String credentialsId){
 def verifyDeployment(String project, String credentialsId){
     projectSet(project, credentialsId)
     def authToken = getToken('openshift-dev')    
-    openShiftVerifyDeployment(authToken: "${authToken}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
+    openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
 }
