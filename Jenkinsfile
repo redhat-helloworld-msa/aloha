@@ -100,18 +100,13 @@ def appDeploy(String project, String tag){
 
 // Get Token for Openshift Plugin authToken
 def getToken(String credentialsId){
+    //Use a credential called openshift-dev
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-        sh "curl -v -XGET \
-            --no-keepalive \
-            -u ${credentialsId} \
-            -H 'X-Csrf-Token: 1' \
-            https://${OPENSHIFT_MASTER}/oauth/authorize?response_type=token&client_id=openshift-challenging-client \
-            2>&1 | \
-            grep 'Location: ' | \
-            sed -E 's/.*access_token=([^&]+)&.*/\\1/' >token"
+        sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://${OPENSHIFT_MASTER}"
+        sh "oc whoami -t > token"
         token = readFile 'token'
         token = token.trim()
         sh 'rm token'
-        return token
-     }
+        return token        
+    }
 }
