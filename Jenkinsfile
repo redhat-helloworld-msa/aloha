@@ -20,8 +20,7 @@ node {
     buildAloha('helloworld-msa-dev', 'openshift-dev')
 
     stage 'Verify deployment in Dev'
-    def tk = getToken('openshift-dev')
-    verifyDeployment(tk)
+    verifyDeployment('helloworld-msa-dev', 'openshift-dev')
 
     stage 'Automated tests'
     parallel(
@@ -114,6 +113,8 @@ def getToken(String credentialsId){
 }
 
 // Verify Openshift deploy
-def verifyDeployment(String authToken){
+def verifyDeployment(String project, String credentialsId){
+    projectSet(project, credentialsId)
+    def authToken = getToken('openshift-dev')    
     openShiftVerifyDeployment(authToken: "${authToken}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
 }
