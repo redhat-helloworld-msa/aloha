@@ -100,7 +100,7 @@ def appDeploy(String project, String tag){
 
 // Get Token for Openshift Plugin authToken
 def getToken(String credentialsId){
-    withCredentials([[$class: 'UsernamePasswordBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh '''
         curl -v -XGET \\
         --no-keepalive \\
