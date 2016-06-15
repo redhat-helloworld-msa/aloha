@@ -20,7 +20,7 @@ node {
     buildAloha('helloworld-msa-dev', 'openshift-dev')
 
     stage 'Verify deployment in Dev'
-    verifyDeployment('helloworld-msa-dev', 'openshift-dev')
+    verifyDeployment('helloworld-msa-dev', 'openshift-dev', '1')
 
     stage 'Automated tests'
     parallel(
@@ -48,12 +48,18 @@ node {
     echo 'Deploying to QA'
     deployAloha('helloworld-msa-dev', 'helloworld-msa-qa', 'openshift-dev', 'openshift-qa', 'promote')
 
+    stage 'Verify deployment in QA'
+    verifyDeployment('helloworld-msa-qa', 'openshift-qa', '1')
+
     stage 'Wait for approval'
     input 'Aprove to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
     deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod')
+
+    stage 'Verify deployment in QA'
+    verifyDeployment('redhatmsa', 'openshift-prod', '2')
 }
 
 // Creates a Build and triggers it
@@ -113,8 +119,8 @@ def getToken(String credentialsId){
 }
 
 // Verify Openshift deploy
-def verifyDeployment(String project, String credentialsId){
+def verifyDeployment(String project, String credentialsId, String podReplicas){
     projectSet(project, credentialsId)
     def authToken = getToken('openshift-dev')    
-    openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
+    openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: 'aloha', replicaCount:"${podReplicas}", verifyReplicaCount: 'true', waitTime: '90000')
 }
