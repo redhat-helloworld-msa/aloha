@@ -114,6 +114,6 @@ def getToken(String credentialsId){
 }
 
 // Verify Openshift deploy
-def verifyDeployment(String authToken, String depCfgName){
+def verifyDeployment(String authToken){
     openShiftVerifyDeployment(authToken: "${authToken}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
 }
