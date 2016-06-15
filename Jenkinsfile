@@ -58,7 +58,7 @@ node {
     echo 'Deploying to production'
     deployAloha('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod')
 
-    stage 'Verify deployment in QA'
+    stage 'Verify deployment in Production'
     verifyDeployment('redhatmsa', 'openshift-prod', '2')
 }
 
