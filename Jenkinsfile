@@ -103,9 +103,9 @@ def getToken(String credentialsId){
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh "curl -v -XGET \
             --no-keepalive \
-            -u "${credentialsId}" \
-            -H "X-Csrf-Token: 1" \
-            "https://${OPENSHIFT_MASTER}:8443/oauth/authorize?response_type=token&client_id=openshift-challenging-client" \
+            -u ${credentialsId} \
+            -H 'X-Csrf-Token: 1' \
+            https://${OPENSHIFT_MASTER}:8443/oauth/authorize?response_type=token&client_id=openshift-challenging-client \
             2>&1 | \
             grep 'Location: ' | \
             sed -E 's/.*access_token=([^&]+)&.*/\\1/' >token"
