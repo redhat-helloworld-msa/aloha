@@ -7,7 +7,7 @@ node {
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
 
-    echo "AuthToken is:"
+    echo "Auth Token is:"
     getToken('openshift-dev')
 
     def mvnHome = tool 'M3'
