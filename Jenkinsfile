@@ -7,9 +7,6 @@ node {
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
 
-    def tk = getToken('openshift-dev')
-    echo "AuthToken is: ${tk}"
-
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
     def sonarHome =  tool 'SQ'
@@ -22,6 +19,10 @@ node {
     echo 'Building docker image and deploying to Dev'
     buildAloha('helloworld-msa-dev', 'openshift-dev')
 
+    stage 'Verify deployment in Dev'
+    def tk = getToken('openshift-dev')
+    verifyDeployment(tk)
+
     stage 'Automated tests'
     parallel(
         unitTests:{
@@ -32,11 +33,12 @@ node {
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 echo 'run sonar tests'
                 sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=aloha -Dsonar.projectName=aloha -Dsonar.host.url=http://${SONARQUBE} -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
-                //sh 'mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar'
+                //sh "${mvnHome}/bin/mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar"
             }
         }, seleniumTests: {
             echo 'This stage simulates web ui tests'
             sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+            // sh "${mvnHome}/bin/mvn test"
         }, owaspAnalysis: {
             echo 'This stage checks dependencies for vulnerabilities'
             build job: 'aloha-dependency-check', wait: true
@@ -109,4 +111,9 @@ def getToken(String credentialsId){
         sh 'rm token'
         return token        
     }
+}
+
+// Verify Openshift deploy
+def verifyDeployment(String authToken, String depCfgName){
+    openShiftVerifyDeployment(authToken: "${authToken}", depCfg: 'aloha', replicaCount:'1', verifyReplicaCount: 'true', waitTime: '90000')
 }
