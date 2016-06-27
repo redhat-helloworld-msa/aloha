@@ -52,7 +52,7 @@ node {
     verifyDeployment('helloworld-msa-qa', 'openshift-qa', '1')
 
     stage 'Wait for approval'
-    input 'Aprove to production?'
+    input 'Approve to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
