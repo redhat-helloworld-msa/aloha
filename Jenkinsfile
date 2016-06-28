@@ -7,6 +7,14 @@ node {
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
 
+    def vash = $/echo \\\"${env.BUILD_NUMBER}\\\" ${foo}/$
+    sh vash
+
+    def patch1 = $/echo oc patch dc/${PROJECT_NAME} -p/$
+    sh patch1
+
+    exit -1
+
     stage 'Git checkout'
     echo 'Checking out git repository'
     git url: "https://github.com/eformat/${PROJECT_NAME}"
@@ -105,13 +113,9 @@ def projectSet(String project, String credentialsId){
 def appDeploy(String project, String tag, String replicas){
     sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo 'Aplication already Exists'"
     sh "oc expose service ${PROJECT_NAME} || echo 'Service already exposed'"
-    // def vash = $/echo \\\"$$BUILD_NUMBER\\\" ${foo}/$
-    def patch1 = $/oc patch dc/${PROJECT_NAME} -p {\\\"spec"\\\:{\\\"template"\\\:{\\\"spec\\\"\\\:{\\\"containers\\\"\\\:[{\\\"name\\\"\\\:\\\"${PROJECT_NAME}\\\",\\\"ports\\\"\\\:[{\\\"containerPort\\\"\\\: 8778,\\\"name\\\"\\\:\\\"jolokia\\\"}]}]}}}}/$
-    echo "$patch1"
-    //sh patch1
-    //def patch2 = $/oc patch dc/${PROJECT_NAME} -p {\"spec\"\:{\"template\"\:{\"spec\"\:{\"containers\"\:[{\"name\"\:\"${PROJECT_NAME}\",\"ports\"\:[{\"containerPort\"\: //8778,\"name\"\:\"jolokia\"}]}]}}}}/$
-    //echo "$patch2"
-    //sh patch2
+
+    // FIXME Mike
+
     sh "oc scale dc/${PROJECT_NAME} --replicas ${replicas}"
 }
 
