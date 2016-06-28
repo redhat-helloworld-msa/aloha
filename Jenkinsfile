@@ -11,7 +11,7 @@ node {
     def vash = $/echo ${env.BUILD_NUMBER}/$
     sh vash
 
-    def patch1 = $/echo oc patch dc/"${PROJECT_NAME}" -p {\"spec\":\"foo\"}/$
+    def patch1 = $/echo oc patch dc/"${PROJECT_NAME}" -p {\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\": 8778,\"name\":\"jolokia\"}]}]}}}}/$
     sh patch1
 
     exit -1
