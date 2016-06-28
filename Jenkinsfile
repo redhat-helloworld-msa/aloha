@@ -1,5 +1,6 @@
 node {
     // environment variables and tools
+    echo "Build Numbre is: ${env.BUILD_NUMBER}"
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
     echo "Project Name is: ${PROJECT_NAME}"
@@ -10,7 +11,7 @@ node {
     def vash = $/echo ${env.BUILD_NUMBER}/$
     sh vash
 
-    def patch1 = $/echo oc patch dc/"${PROJECT_NAME}" -p/$
+    def patch1 = $/echo oc patch dc/"${PROJECT_NAME}" -p {\"spec\":\"foo\"}/$
     sh patch1
 
     exit -1
