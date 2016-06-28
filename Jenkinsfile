@@ -8,7 +8,10 @@ node {
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
 
-    def fng = $/echo oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\"\,\"ports\":[{\"containerPort\":8778\,\"name\":\"jolokia\"}]}]}}}}$'/$
+    def vash = $/echo 1:\\\' 2:\\' 3:\' 4:"'"/$
+    sh vash
+
+    def fng = $/echo oc patch dc/"${PROJECT_NAME}" -p {\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\"\,\"ports\":[{\"containerPort\":8778\,\"name\":\"jolokia\"}]}]}}}}/$
 
     sh fng
 
