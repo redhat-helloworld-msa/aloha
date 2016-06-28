@@ -11,7 +11,7 @@ node {
     def vash = $/echo 1:\\\' 2:\\' 3:\' 4:"'"/$
     sh vash
 
-    def fng = $/echo oc patch dc/"${PROJECT_NAME}" -p {\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\"\,\"ports\":[{\"containerPort\":8778\,\"name\":\"jolokia\"}]}]}}}}/$
+    def fng = $/echo oc patch dc/"${PROJECT_NAME}" -p "'"{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\"\,\"ports\":[{\"containerPort\":8778\,\"name\":\"jolokia\"}]}]}}}}"'"/$
 
     sh fng
 
