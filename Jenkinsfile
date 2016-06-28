@@ -7,10 +7,10 @@ node {
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
 
-    def vash = $/echo \\\"${env.BUILD_NUMBER}\\\"/$
+    def vash = $/echo ${env.BUILD_NUMBER}/$
     sh vash
-
-    def patch1 = $/echo oc patch dc/${PROJECT_NAME} -p/$
+    
+    def patch1 = $/echo oc patch dc/$${PROJECT_NAME} -p/$
     sh patch1
 
     exit -1
