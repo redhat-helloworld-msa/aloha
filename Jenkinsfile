@@ -63,7 +63,7 @@ node {
     deployProject('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod', "${PROD_POD_NUMBER}")
 
     stage 'Verify deployment in Production'
-    verifyDeployment('redhatmsa', 'openshift-prod', ${PROD_POD_NUMBER}
+    verifyDeployment('redhatmsa', 'openshift-prod', ${PROD_POD_NUMBER})
 }
 
 // Creates a Build and triggers it
