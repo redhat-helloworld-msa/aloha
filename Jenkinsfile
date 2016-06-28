@@ -21,7 +21,7 @@ node {
 
     stage 'Build image and deploy in Dev'
     echo 'Building docker image and deploying to Dev'
-    buildProject('helloworld-msa-dev', 'openshift-dev', "${DEV_POD_NUMBER}".toInteger())
+    buildProject('helloworld-msa-dev', 'openshift-dev', "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in Dev'
     verifyDeployment('helloworld-msa-dev', 'openshift-dev', '1')
