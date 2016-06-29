@@ -5,10 +5,12 @@ node {
             [$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'localhost:8443', description: "host:port of OpenShift master API"],
             [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port"],
-            [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port"],
+            [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_DEV', defaultValue: 'CRED_OPENSHIFT_DEV', description: "ID of Development OSE Jenkins credential"],
+            [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_QA', defaultValue: 'CRED_OPENSHIFT_QA', description: "ID of Test OSE Jenkins credential"],
+            [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_PROD', defaultValue: 'CRED_OPENSHIFT_PROD', description: "ID of Production OSE Jenkins credential"],
             [$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire"],
             [$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire"],
-            [$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire"]
+            [$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire"]            
         ]]
     ])
 
@@ -20,6 +22,9 @@ node {
     echo "Project Name is: ${PROJECT_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
+    echo "Developer Credential ID is: ${CRED_OPENSHIFT_DEV}"
+    echo "Test Credential ID is: ${QA_OPENSHIFT_DEV}"
+    echo "Production Credential ID is: ${PROD_OPENSHIFT_DEV}"
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
@@ -68,20 +73,20 @@ node {
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
-    deployProject('helloworld-msa-dev', 'helloworld-msa-qa', 'openshift-dev', 'openshift-qa', 'promote', "${DEV_POD_NUMBER}")
+    deployProject('helloworld-msa-dev', 'helloworld-msa-qa', 'CRED_OPENSHIFT_DEV', 'CRED_OPENSHIFT_QA', 'promote', "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in QA'
-    verifyDeployment('helloworld-msa-qa', 'openshift-qa', "${QA_POD_NUMBER}")
+    verifyDeployment('helloworld-msa-qa', 'CRED_OPENSHIFT_QA', "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
     input 'Approve to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployProject('helloworld-msa-dev', 'redhatmsa', 'openshift-dev', 'openshift-prod', 'prod', "${PROD_POD_NUMBER}")
+    deployProject('helloworld-msa-dev', 'redhatmsa', 'CRED_OPENSHIFT_DEV', 'CRED_OPENSHIFT_PROD', 'prod', "${PROD_POD_NUMBER}")
 
     stage 'Verify deployment in Production'
-    verifyDeployment('redhatmsa', 'openshift-prod', "${PROD_POD_NUMBER}")
+    verifyDeployment('redhatmsa', 'CRED_OPENSHIFT_PROD', "${PROD_POD_NUMBER}")
 }
 
 // Creates a Build and triggers it
@@ -111,7 +116,6 @@ def deployProject(String origProject, String project, String origCredentialsId, 
 
 // Login and set the project
 def projectSet(String project, String credentialsId){
-    //Use a credential called openshift-dev
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://${OPENSHIFT_MASTER}"
     }
@@ -132,7 +136,6 @@ def appDeploy(String project, String tag, String replicas){
 
 // Get Token for Openshift Plugin authToken
 def getToken(String credentialsId){
-    //Use a credential called openshift-dev
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
         sh "oc login --insecure-skip-tls-verify=true -u $env.USERNAME -p $env.PASSWORD https://${OPENSHIFT_MASTER}"
         sh "oc whoami -t > token"
