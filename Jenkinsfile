@@ -137,11 +137,14 @@ def projectSet(String project, String credentialsId){
 
 // Deploy the project based on a existing ImageStream
 def appDeploy(String project, String tag, String replicas){
+    if (fileExists('status')) {
+        sh "rm -f status"
+    }
     sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo \$? > status"
     def ret = 0
     if (fileExists('status')) {
         // app exists - non zero exit code
-        sh "echo 'Aplication already Exists'"
+        sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
         def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$'/$
         sh patch1
