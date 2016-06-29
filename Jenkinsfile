@@ -129,8 +129,8 @@ def appDeploy(String project, String tag, String replicas){
     def ret = 0
     if (fileExists('status')) {
         ret = readFile('status').trim()
+        sh 'rm status'
     }
-    sh 'rm status'
     if (ret.toInteger() != 0) {
         sh "echo 'Aplication already Exists'"
         // patch dc with current project rolling deploy is default strategy
