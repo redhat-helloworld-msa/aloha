@@ -146,8 +146,10 @@ def appDeploy(String project, String tag, String replicas){
         // app exists - non zero exit code
         sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
+        sh "oc deploy dc/${PROJECT_NAME} --enable-triggers=false"
         def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$'/$
         sh patch1
+        sh "oc deploy dc/${PROJECT_NAME} --enable-triggers=true"
         sh "oc deploy dc/${PROJECT_NAME} --latest"
     } else {
         // new application
