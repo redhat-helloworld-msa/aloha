@@ -79,14 +79,31 @@ node {
     verifyDeployment("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
-    input 'Approve to production?'
+    parallel({
+            input 'Approve to production?'
+        
+            stage 'Deploy to production'
+            echo 'Deploying to production'
+            deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
 
-    stage 'Deploy to production'
-    echo 'Deploying to production'
-    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
+            stage 'Verify deployment in Production'
+            verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
+        },
+        { 
+            input 'Delete Development & Test Projects?' 
 
-    stage 'Verify deployment in Production'
-    verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
+            stage 'Delete Development & Test Projects'
+            echo 'Delete Development & Test Projects'
+            deleteProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}")
+            deleteProject("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}")
+        }
+    )
+}
+
+// Delete a Project
+def deleteProject(String project, String credentialsId){
+    projectSet(project, credentialsId)
+    sh "oc delete project ${project || echo 'Delete project failed'"
 }
 
 // Creates a Build and triggers it
@@ -128,21 +145,18 @@ def appDeploy(String project, String tag, String replicas){
     sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo \$? > status"
     def ret = 0
     if (fileExists('status')) {
-        ret = readFile('status').trim()
-        sh 'rm status'
-    }
-    if (ret.toInteger() != 0) {
+        // app exists - non zero exit code
         sh "echo 'Aplication already Exists'"
         // patch dc with current project rolling deploy is default strategy
         def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$'/$
         sh patch1
-        sh "oc deploy dc/${PROJECT_NAME} --latest"
+        sh "oc deploy dc/${PROJECT_NAME} --latest"        
+    } else {
+        // new application
+        def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
+        sh patch2
     }
     sh "oc expose service ${PROJECT_NAME} || echo 'Service already exposed'"
-    def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$'/$
-    sh patch2
-    def patch3 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
-    sh patch3
     sh "oc scale dc/${PROJECT_NAME} --replicas ${replicas}"
 }
 
