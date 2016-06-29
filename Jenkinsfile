@@ -49,9 +49,10 @@ node {
     stage 'Verify deployment in Dev'
     verifyDeployment("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", '1')
 
+/*
     stage 'Automated tests'
     parallel(
-        unitTests:{
+       unitTests:{
             echo 'This stage simulates automated unit tests'
             sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
         }, sonarAnalysis: {
@@ -70,7 +71,7 @@ node {
             build job: "${PROJECT_NAME}-dependency-check", wait: true
         }, failFast: true
     )
-
+*/
     stage 'Deploy to QA'
     echo 'Deploying to QA'
     deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
