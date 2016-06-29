@@ -79,26 +79,20 @@ node {
     verifyDeployment("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
-    parallel(
-        prodDeploy: {
-            input 'Approve to production?'
+    input 'Approve to production?'
         
-            stage 'Deploy to production'
-            echo 'Deploying to production'
-            deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
+    stage 'Deploy to production'
+    echo 'Deploying to production'
+    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
 
-            stage 'Verify deployment in Production'
-            verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
-        },
-        deleteDevTest: { 
-            input 'Delete Development & Test Projects?' 
-
-            stage 'Delete Development & Test Projects'
-            echo 'Delete Development & Test Projects'
-            deleteProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}")
-            deleteProject("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}")
-        }
-    )
+    stage 'Verify deployment in Production'
+    verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
+    
+    stage 'Wait for Delete Development & Test Projects'
+    input 'Delete Development & Test Projects?' 
+    echo 'Delete Development & Test Projects'
+    deleteProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}")
+    deleteProject("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}")    
 }
 
 // Delete a Project
