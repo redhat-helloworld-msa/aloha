@@ -79,7 +79,8 @@ node {
     verifyDeployment("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
-    parallel({
+    parallel(
+        prodDeploy: {
             input 'Approve to production?'
         
             stage 'Deploy to production'
@@ -89,7 +90,7 @@ node {
             stage 'Verify deployment in Production'
             verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
         },
-        { 
+        deleteDevTest: { 
             input 'Delete Development & Test Projects?' 
 
             stage 'Delete Development & Test Projects'
