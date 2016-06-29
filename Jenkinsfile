@@ -142,18 +142,19 @@ def appDeploy(String project, String tag, String replicas){
         sh "rm -f status"
     }
     sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo \$? > status"
-    def ret = 0
+        def ret = 0
     if (fileExists('status')) {
         // app exists - non zero exit code
         sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
+        registryIP = getRegistry()
         sh "oc set triggers dc/${PROJECT_NAME} --manual"
-        def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"image\":\"${project}$/${PROJECT_NAME}:${tag}\"}]}}}}$'/$
+        def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"image\":\"${registryIP}:5000$/${project}$/${PROJECT_NAME}:${tag}\"}]}}}}$'/$
         sh patch1
         sh "oc deploy dc/${PROJECT_NAME} --latest"
         sh "oc set triggers dc/${PROJECT_NAME} --auto"
     } else {
-        // new application        
+        // new application
         def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
         sh patch2
     }
@@ -178,4 +179,13 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
     projectSet(project, credentialsId)
     def authToken = getToken(credentialsId)    
     openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: "${PROJECT_NAME}", replicaCount:"${podReplicas}", verifyReplicaCount: 'true', waitTime: '180000')
+}
+
+// Gte Docker Registry Service Cluster IP
+def getRegistry(){    
+    sh "host docker-registry.default.svc.cluster.local. > registry"
+    registry = readFile 'registry'
+    registry = token.trim()
+    sh 'rm registry'
+    return registry
 }
