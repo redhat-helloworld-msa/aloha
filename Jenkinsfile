@@ -125,7 +125,9 @@ def projectSet(String project, String credentialsId){
 
 // Deploy the project based on a existing ImageStream
 def appDeploy(String project, String tag, String replicas){
-    def ret = sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8"    
+    sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8; echo $? > status"
+    def ret = readFile('status').trim()
+    sh 'rm status'
     if (ret != 0) {
         sh "echo 'Aplication already Exists'"
         // patch dc with current project rolling deploy is default strategy
