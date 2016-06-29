@@ -1,18 +1,14 @@
 node {
 
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'localhost:8443', description: "host:port of OpenShift master API",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire",]]]])
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire",]]]])
+    properties([
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'localhost:8443', description: "host:port of OpenShift master API"]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire",]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire",]]],
+        [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire",]]]
+    ])
 
     // jenkins environment variables
     echo "Build Number is: ${env.BUILD_NUMBER}"
