@@ -142,11 +142,12 @@ def appDeploy(String project, String tag, String replicas){
     if (fileExists('status')) {
         // app exists - non zero exit code
         sh "echo 'Aplication already Exists'"
-        // patch dc with current project rolling deploy is default strategy, this will trigger a deploy
+        // patch dc with current project rolling deploy is default strategy
         def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$'/$
         sh patch1
+        sh "oc deploy dc/${PROJECT_NAME} --enable-triggers"
     } else {
-        // new application, this will trigger a deploy
+        // new application
         def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
         sh patch2
     }
