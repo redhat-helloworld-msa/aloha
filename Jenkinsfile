@@ -1,7 +1,8 @@
 node {
 
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha']]]])
-    echo "received ${binding.hasVariable('PROJECT_NAME') ? PROJECT_NAME : 'undefined'}"
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha']]]]) {
+        echo "received ${binding.hasVariable('PROJECT_NAME') ? PROJECT_NAME : 'undefined'}"
+    }
 
     // environment variables, tools and properties
     echo "Build Number is: ${env.BUILD_NUMBER}"
