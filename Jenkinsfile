@@ -147,12 +147,12 @@ def appDeploy(String project, String tag, String replicas){
         sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
         sh "oc set triggers dc/${PROJECT_NAME} --manual"
-        def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"image\":\"${project}\"/\"${PROJECT_NAME}:${tag}\"}]}}}}$'/$
+        def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\": \"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"image\":\"${project}/${PROJECT_NAME}:${tag}\"}]}}}}$'/$
         sh patch1
         sh "oc deploy dc/${PROJECT_NAME} --latest"
         sh "oc set triggers dc/${PROJECT_NAME} --auto"
     } else {
-        // new application
+        // new application        
         def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
         sh patch2
     }
