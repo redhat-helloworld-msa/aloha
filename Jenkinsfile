@@ -103,7 +103,7 @@ node {
 // Delete a Project
 def deleteProject(String project, String credentialsId){
     projectSet(project, credentialsId)
-    sh "oc delete project ${project || echo 'Delete project failed'"
+    sh "oc delete project ${project} || echo 'Delete project failed'"
 }
 
 // Creates a Build and triggers it
