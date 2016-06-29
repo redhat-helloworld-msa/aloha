@@ -44,10 +44,10 @@ node {
 
     stage 'Build image and deploy in Dev'
     echo 'Building docker image and deploying to Dev'
-    buildProject('helloworld-msa-dev', "${CRED_OPENSHIFT_DEV}", "${DEV_POD_NUMBER}")
+    buildProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in Dev'
-    verifyDeployment('helloworld-msa-dev', "${CRED_OPENSHIFT_DEV}", '1')
+    verifyDeployment("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", '1')
 
     stage 'Automated tests'
     parallel(
@@ -73,17 +73,17 @@ node {
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
-    deployProject('helloworld-msa-dev', 'helloworld-msa-qa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
+    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in QA'
-    verifyDeployment('helloworld-msa-qa', "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
+    verifyDeployment("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
     input 'Approve to production?'
 
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployProject('helloworld-msa-dev', 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
+    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
 
     stage 'Verify deployment in Production'
     verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
