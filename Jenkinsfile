@@ -1,15 +1,17 @@
 node {
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha']]]])
+    echo "received ${binding.hasVariable('PROJECT_NAME') ? PROJECT_NAME : 'undefined'}"
+
     // environment variables, tools and properties
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
     echo "Project Name is: ${PROJECT_NAME}"
+    echo "Branch name is: ${env.BRANCH_NAME}"
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
-
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha']]]])
-    echo "received ${binding.hasVariable('PROJECT_NAME') ? PROJECT_NAME : 'undefined'}"
 
     stage 'Git checkout'
     echo 'Checking out git repository'
