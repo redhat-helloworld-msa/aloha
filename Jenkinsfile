@@ -23,7 +23,7 @@ node {
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
     echo "Developer Credential ID is: ${CRED_OPENSHIFT_DEV}"
-    echo "Test Credential ID is: ${CRED_OPENSHIFT_DQA}"
+    echo "Test Credential ID is: ${CRED_OPENSHIFT_QA}"
     echo "Production Credential ID is: ${CRED_OPENSHIFT_PROD}"
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
