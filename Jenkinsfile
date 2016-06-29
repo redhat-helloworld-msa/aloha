@@ -3,7 +3,7 @@ node {
     properties([
         [$class: 'ParametersDefinitionProperty', parameterDefinitions: [
             [$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
-            [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'localhost:8443', description: "host:port of OpenShift master API"],
+            [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'ose-fb-master.hosts.fabric8.com:8443', description: "host:port of OpenShift master API"],
             [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port"],
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_DEV', defaultValue: 'CRED_OPENSHIFT_DEV', description: "ID of Development OSE Jenkins credential"],
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_QA', defaultValue: 'CRED_OPENSHIFT_QA', description: "ID of Test OSE Jenkins credential"],
