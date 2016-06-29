@@ -126,7 +126,10 @@ def projectSet(String project, String credentialsId){
 // Deploy the project based on a existing ImageStream
 def appDeploy(String project, String tag, String replicas){
     sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo \$? > status"
-    def ret = readFile('status').trim() || 0
+    def ret = 0
+    if (fileExists('status')) {
+        ret = readFile('status').trim()
+    }
     sh 'rm status'
     if (ret.toInteger() != 0) {
         sh "echo 'Aplication already Exists'"
