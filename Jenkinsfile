@@ -1,15 +1,27 @@
 node {
 
-    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha']]]]) {
-        echo "received ${binding.hasVariable('PROJECT_NAME') ? PROJECT_NAME : 'undefined'}"
-    }
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel",]]]])
 
-    // environment variables, tools and properties
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'localhost:8443', description: "host:port of OpenShift master API",]]]])
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]]])
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port",]]]])
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire",]]]])
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire",]]]])
+
+    properties([[$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire",]]]])
+
+    // jenkins environment variables
     echo "Build Number is: ${env.BUILD_NUMBER}"
+    echo "Branch name is: ${env.BRANCH_NAME}"
+
+    // build properties
+    echo "Project Name is: ${PROJECT_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
-    echo "Project Name is: ${PROJECT_NAME}"
-    echo "Branch name is: ${env.BRANCH_NAME}"
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
@@ -18,6 +30,7 @@ node {
     echo 'Checking out git repository'
     git url: "https://github.com/eformat/${PROJECT_NAME}"
 
+    // tools
     def mvnHome = tool 'M3'
     def javaHome = tool 'jdk8'
     def sonarHome =  tool 'SQ'
