@@ -18,13 +18,13 @@ node {
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "Branch name is: ${env.BRANCH_NAME}"
 
-    // build properties
+    // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Project Name is: ${PROJECT_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "Sonarqube is: ${SONARQUBE}"
     echo "Developer Credential ID is: ${CRED_OPENSHIFT_DEV}"
-    echo "Test Credential ID is: ${QA_OPENSHIFT_DEV}"
-    echo "Production Credential ID is: ${PROD_OPENSHIFT_DEV}"
+    echo "Test Credential ID is: ${CRED_OPENSHIFT_DQA}"
+    echo "Production Credential ID is: ${CRED_OPENSHIFT_PROD}"
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
