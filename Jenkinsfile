@@ -12,16 +12,16 @@ node {
             [$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire"],
             [$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire"],
             [$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire"],
-            [$class: 'StringParameterDefinition', name: 'SKIP_TESTS', defaultValue: 'true', description: "Skip Test Stages (true || false)"]
+            [$class: 'StringParameterDefinition', name: 'SKIP_TESTS', defaultValue: 'true', description: "Skip Test Stages (true || false)"],
+            [$class: 'StringParameterDefinition', name: 'PROJECT_PER_DEV_BUILD', defaultValue: 'true', description: "Create A Project Per Dev Build (true || false)"],
+            [$class: 'StringParameterDefinition', name: 'PROJECT_PER_TEST_BUILD', defaultValue: 'true', description: "Create A Project Per Test Build (true || false)"],
+            [$class: 'StringParameterDefinition', name: 'PROD_PROJECT_NAME', defaultValue: 'redhatmsa', description: "Production Project Name (redhatmsa)"]
         ]]
     ])
 
     // jenkins environment variables
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "Branch name is: ${env.BRANCH_NAME}"
-
-    sonarIP = getIP("${SONARQUBE}")
-    echo "SonarTest ${sonarIP}"
 
     // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Project Name is: ${PROJECT_NAME}"    
@@ -35,6 +35,8 @@ node {
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
     echo "Skip Tests is: ${SKIP_TESTS}"
+    echo "Project per Dev Build is: ${PROJECT_PER_DEV_BUILD}"
+    echo "Project per Test Build is: ${PROJECT_PER_TEST_BUILD}"
 
     stage 'Git checkout'
     echo 'Checking out git repository'
@@ -49,12 +51,26 @@ node {
     echo 'Building project'
     sh "${mvnHome}/bin/mvn clean package"
 
+    def devProject = ''
+    if ("${PROJECT_PER_DEV_BUILD}"=='true') {
+        devProject = "${PROJECT_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+    } else {
+        devProject = "${PROJECT_NAME}-dev"
+    }
+
+    def testProject = ''
+    if ("${PROJECT_PER_TEST_BUILD}"=='true') {
+        testProject = "${PROJECT_NAME}-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+    } else {
+        testProject = "${PROJECT_NAME}-qa"
+    }    
+
     stage 'Build image and deploy in Dev'
     echo 'Building docker image and deploying to Dev'
-    buildProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${DEV_POD_NUMBER}")
+    buildProject("${devProject}", "${CRED_OPENSHIFT_DEV}", "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in Dev'
-    verifyDeployment("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", '1')
+    verifyDeployment("${devProjec}", "${CRED_OPENSHIFT_DEV}", '1')
 
     if ("${SKIP_TESTS}"=='false') {
         stage 'Automated tests'
@@ -83,26 +99,26 @@ node {
 
     stage 'Deploy to QA'
     echo 'Deploying to QA'
-    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
+    deployProject("${devProject}", "${testProject}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in QA'
-    verifyDeployment("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
+    verifyDeployment("${testProject}", "${CRED_OPENSHIFT_QA}", "${QA_POD_NUMBER}")
 
     stage 'Wait for approval'
     input 'Approve to production?'
         
     stage 'Deploy to production'
     echo 'Deploying to production'
-    deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", 'redhatmsa', "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
+    deployProject("${devProject}", "${PROD_PROJECT_NAME}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_PROD}", 'prod', "${PROD_POD_NUMBER}")
 
     stage 'Verify deployment in Production'
-    verifyDeployment('redhatmsa', "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
+    verifyDeployment("${PROD_PROJECT_NAME}", "${CRED_OPENSHIFT_PROD}", "${PROD_POD_NUMBER}")
     
     stage 'Wait for Delete Development & Test Projects'
     input 'Delete Development & Test Projects?' 
     echo 'Delete Development & Test Projects'
-    deleteProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}")
-    deleteProject("helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_QA}")    
+    deleteProject("${devProject}", "${CRED_OPENSHIFT_DEV}")
+    deleteProject("${testProject}", "${CRED_OPENSHIFT_QA}")    
 }
 
 // Delete a Project
@@ -190,11 +206,11 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
     openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: "${PROJECT_NAME}", replicaCount:"${podReplicas}", verifyReplicaCount: 'true', waitTime: '180000')
 }
 
-// Gte Docker Registry Service Cluster IP
+// Get A Service Cluster IP
 def getIP(String lookup){
-    sh "getent hosts ${lookup} | cut -f 1 -d \" \" > registry"
-    registry = readFile 'registry'
-    registry = registry.trim()
-    sh 'rm registry'
-    return registry
+    sh "getent hosts ${lookup} | cut -f 1 -d \" \" > ipaddress"
+    ipaddress = readFile 'ipaddress'
+    ipaddress = registry.trim()
+    sh 'rm ipaddress'
+    return ipaddress
 }
