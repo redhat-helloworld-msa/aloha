@@ -22,6 +22,8 @@ node {
     // jenkins environment variables
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "Branch name is: ${env.BRANCH_NAME}"
+    echo "Git URL is: ${env.GIT_URL}"
+    echo "Git Commit is: ${env.GIT_COMMIT}"
 
     // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Application Name is: ${APP_NAME}"    
@@ -43,7 +45,6 @@ node {
     echo 'Checking out git repository'
     git url: "https://github.com/eformat/${APP_NAME}", branch: "${env.BRANCH_NAME}"
 
-    sh "echo ${env}"
     exit
 
     // tools
