@@ -21,3 +21,4 @@ Deploy the application in Openshift using Fabric8 plugin
 2. Execute
 
 		mvn clean package docker:build fabric8:json fabric8:apply
+
