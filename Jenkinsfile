@@ -53,7 +53,8 @@ node {
     stage 'Verify deployment in Dev'
     verifyDeployment("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", '1')
 
-    if ('false'.equalsIgnoreCase("${SKIP_TESTS}")) {
+    def skipTests = "${SKIP_TESTS}"    
+    if (skipTests.equalsIgnoreCase('false')) {
         stage 'Automated tests'
         parallel(
            unitTests:{
