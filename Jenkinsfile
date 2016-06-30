@@ -194,7 +194,7 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 def getIP(String lookup){
     sh "getent hosts ${lookup} | cut -f 1 -d \" \" > registry"
     registry = readFile 'registry'
-    registry = token.trim()
+    registry = registry.trim()
     sh 'rm registry'
     return registry
 }
