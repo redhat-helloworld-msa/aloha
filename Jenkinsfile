@@ -11,7 +11,8 @@ node {
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_PROD', defaultValue: 'CRED_OPENSHIFT_PROD', description: "ID of Production OSE Jenkins credential"],
             [$class: 'StringParameterDefinition', name: 'DEV_POD_NUMBER', defaultValue: '1', description: "Number of development pods we desire"],
             [$class: 'StringParameterDefinition', name: 'QA_POD_NUMBER', defaultValue: '1', description: "Number of test pods we desire"],
-            [$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire"]            
+            [$class: 'StringParameterDefinition', name: 'PROD_POD_NUMBER', defaultValue: '2', description: "Number of production pods we desire"],
+            [$class: 'StringParameterDefinition', name: 'SKIP_TESTS', defaultValue: 'true', description: "Skip Test Stages (true || false)"]
         ]]
     ])
 
@@ -22,6 +23,7 @@ node {
     // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Project Name is: ${PROJECT_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
+    echo "OpenShist Registry is: ${OPENSHIFT_REGISTRY}"
     echo "Sonarqube is: ${SONARQUBE}"
     echo "Developer Credential ID is: ${CRED_OPENSHIFT_DEV}"
     echo "Test Credential ID is: ${CRED_OPENSHIFT_QA}"
@@ -29,6 +31,7 @@ node {
     echo "Expected Dev Pod Number is: ${DEV_POD_NUMBER}"
     echo "Expected QA Pod Number is: ${QA_POD_NUMBER}"
     echo "Expected Prod Pod Number is: ${PROD_POD_NUMBER}"
+    echo "Skip Tests is: ${SKIP_TESTS}"
 
     stage 'Git checkout'
     echo 'Checking out git repository'
@@ -50,30 +53,31 @@ node {
     stage 'Verify deployment in Dev'
     verifyDeployment("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", '1')
 
-/*
-    stage 'Automated tests'
-    parallel(
-       unitTests:{
-            echo 'This stage simulates automated unit tests'
-            sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
-        }, sonarAnalysis: {
-            withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
-                usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
-                echo 'run sonar tests'
-                sonarIP = getIP("${SONARQUBE}")
-                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.projectName=${PROJECT_NAME} -Dsonar.host.url=http://${sonarIP}:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
-                //sh "${mvnHome}/bin/mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar"
-            }
-        }, seleniumTests: {
-            echo 'This stage simulates web ui tests'
-            sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
-            // sh "${mvnHome}/bin/mvn test"
-        }, owaspAnalysis: {
-            echo 'This stage checks dependencies for vulnerabilities'
-            build job: "${PROJECT_NAME}-dependency-check", wait: true
-        }, failFast: true
-    )
-*/
+    if (${SKIP_TESTS}=='false') {
+        stage 'Automated tests'
+        parallel(
+           unitTests:{
+                echo 'This stage simulates automated unit tests'
+                sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+            }, sonarAnalysis: {
+                withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
+                    usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+                    echo 'run sonar tests'
+                    sonarIP = getIP("${SONARQUBE}")
+                    sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.projectName=${PROJECT_NAME} -Dsonar.host.url=http://${sonarIP}:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
+                    //sh "${mvnHome}/bin/mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar"
+                }
+            }, seleniumTests: {
+                echo 'This stage simulates web ui tests'
+                sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore verify"
+                // sh "${mvnHome}/bin/mvn test"
+            }, owaspAnalysis: {
+                echo 'This stage checks dependencies for vulnerabilities'
+                build job: "${PROJECT_NAME}-dependency-check", wait: true
+            }, failFast: true
+        )
+    }
+
     stage 'Deploy to QA'
     echo 'Deploying to QA'
     deployProject("helloworld-msa-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "helloworld-msa-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "${CRED_OPENSHIFT_DEV}", "${CRED_OPENSHIFT_QA}", 'promote', "${DEV_POD_NUMBER}")
