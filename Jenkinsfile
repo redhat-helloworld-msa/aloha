@@ -4,7 +4,8 @@ node {
         [$class: 'ParametersDefinitionProperty', parameterDefinitions: [
             [$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'ose-fb-master.hosts.fabric8.com:8443', description: "host:port of OpenShift master API"],
-            [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: '172.30.147.186:9000', description: "ip:port of OpenShift Sonarqube Cluster Service address and port"],
+            [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: 'sonarqube.sonarqube.svc.cluster.local.', description: "ip:port of OpenShift Sonarqube Service Name (assumes default port 9000)"],
+            [$class: 'StringParameterDefinition', name: 'OPENSHIFT_REGISTRY', defaultValue: 'docker-registry.default.svc.cluster.local.', description: "OpenShift Registry Service Name (assumes default port 5000)"]
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_DEV', defaultValue: 'CRED_OPENSHIFT_DEV', description: "ID of Development OSE Jenkins credential"],
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_QA', defaultValue: 'CRED_OPENSHIFT_QA', description: "ID of Test OSE Jenkins credential"],
             [$class: 'StringParameterDefinition', name: 'CRED_OPENSHIFT_PROD', defaultValue: 'CRED_OPENSHIFT_PROD', description: "ID of Production OSE Jenkins credential"],
@@ -59,7 +60,8 @@ node {
             withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sonar-dev',
                 usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                 echo 'run sonar tests'
-                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.projectName=${PROJECT_NAME} -Dsonar.host.url=http://${SONARQUBE} -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
+                sonarIP = getIP("${SONARQUBE}")
+                sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.projectName=${PROJECT_NAME} -Dsonar.host.url=http://${sonarIP}:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
                 //sh "${mvnHome}/bin/mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar"
             }
         }, seleniumTests: {
@@ -147,7 +149,7 @@ def appDeploy(String project, String tag, String replicas){
         // app exists - non zero exit code
         sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
-        registryIP = getRegistry()
+        registryIP = getIP("${OPENSHIFT_REGISTRY}")
         sh "oc set triggers dc/${PROJECT_NAME} --manual"
         def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"image\":\"${registryIP}:5000$/${project}$/${PROJECT_NAME}:${tag}\"}]}}}}$'/$
         sh patch1
@@ -182,8 +184,9 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 }
 
 // Gte Docker Registry Service Cluster IP
-def getRegistry(){    
-    sh 'getent hosts docker-registry.default.svc.cluster.local. | awk '{ print $1 }' > registry'
+def getIP(String lookup){
+    def dns = $/getent hosts ${lookup} | awk $'{ print \$1 }$' > registry/$
+    sh dns
     registry = readFile 'registry'
     registry = token.trim()
     sh 'rm registry'
