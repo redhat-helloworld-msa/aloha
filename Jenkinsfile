@@ -2,7 +2,8 @@ node {
 
     properties([
         [$class: 'ParametersDefinitionProperty', parameterDefinitions: [
-            [$class: 'StringParameterDefinition', name: 'APP_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
+            [$class: 'StringParameterDefinition', name: 'APP_NAME', defaultValue: 'aloha', description: "Application Name - all resources use this name as a lebel"],
+            [$class: 'StringParameterDefinition', name: 'GIT_URL', defaultValue: 'https://github.com/eformat', description: "Git URL (concat with app name for checkout"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'ose-fb-master.hosts.fabric8.com:8443', description: "host:port of OpenShift master API"],
             [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: 'sonarqube.sonarqube.svc.cluster.local.', description: "OpenShift Sonarqube Service Name (assumes default port 9000)"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_REGISTRY', defaultValue: 'docker-registry.default.svc.cluster.local.', description: "OpenShift Registry Service Name (assumes default port 5000)"],
@@ -22,8 +23,7 @@ node {
     // jenkins environment variables
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "Branch name is: ${env.BRANCH_NAME}"
-    echo "Git URL is: ${env.GIT_URL}"
-    echo "Git Commit is: ${env.GIT_COMMIT}"
+    echo "Git URL is: ${GIT_URL}"
 
     // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Application Name is: ${APP_NAME}"    
@@ -43,9 +43,7 @@ node {
 
     stage 'Git checkout'
     echo 'Checking out git repository'
-    git url: "https://github.com/eformat/${APP_NAME}", branch: "${env.BRANCH_NAME}"
-
-    exit
+    git url: "${GIT_URL}/${APP_NAME}", branch: "${env.BRANCH_NAME}"
 
     // tools
     def mvnHome = tool 'M3'
