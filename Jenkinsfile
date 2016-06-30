@@ -211,7 +211,7 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 def getIP(String lookup){
     sh "getent hosts ${lookup} | cut -f 1 -d \" \" > ipaddress"
     ipaddress = readFile 'ipaddress'
-    ipaddress = registry.trim()
+    ipaddress = ipaddress.trim()
     sh 'rm ipaddress'
     return ipaddress
 }
