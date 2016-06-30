@@ -41,7 +41,7 @@ node {
 
     stage 'Git checkout'
     echo 'Checking out git repository'
-    git url: "https://github.com/eformat/${APP_NAME}", branch: "{env.BRANCH_NAME}"
+    git url: "https://github.com/eformat/${APP_NAME}", branch: "${env.BRANCH_NAME}"
 
     sh "echo ${env}"
     exit
