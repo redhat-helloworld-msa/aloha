@@ -192,7 +192,7 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 
 // Gte Docker Registry Service Cluster IP
 def getIP(String lookup){
-    sh "getent hosts ${lookup} | awk \'{ print \$1 }\' > registry"
+    sh "getent hosts ${lookup} | cut -f 1 -d " " > registry"
     registry = readFile 'registry'
     registry = token.trim()
     sh 'rm registry'
