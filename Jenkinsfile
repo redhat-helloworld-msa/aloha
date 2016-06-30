@@ -179,7 +179,7 @@ def appDeploy(String project, String tag, String replicas){
         sh "oc set triggers dc/${APP_NAME} --manual"
         def patch1 = $/oc patch dc/"${APP_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${APP_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${APP_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${APP_NAME}\",\"image\":\"${registryIP}:5000$/${project}$/${APP_NAME}:${tag}\"}]}}}}$'/$
         sh patch1
-        sh "oc deploy dc/${APP_NAME} --latest"
+        sh "oc deploy dc/${APP_NAME} --latest || echo 'A deployment is already in progress'"
         sh "oc set triggers dc/${APP_NAME} --auto"
     } else {
         // new application
