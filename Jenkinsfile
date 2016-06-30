@@ -183,7 +183,7 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 
 // Gte Docker Registry Service Cluster IP
 def getRegistry(){    
-    sh "host docker-registry.default.svc.cluster.local. > registry"
+    sh "getent hosts docker-registry.default.svc.cluster.local. | awk '{ print $1 }' > registry"
     registry = readFile 'registry'
     registry = token.trim()
     sh 'rm registry'
