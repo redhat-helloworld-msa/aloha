@@ -20,6 +20,9 @@ node {
     echo "Build Number is: ${env.BUILD_NUMBER}"
     echo "Branch name is: ${env.BRANCH_NAME}"
 
+    sonarIP = getIP("${SONARQUBE}")
+    echo "SonarTest ${sonarIP}"
+
     // build properties (acts as check - these echo's will fail if properties not bound)
     echo "Project Name is: ${PROJECT_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
@@ -189,7 +192,7 @@ def verifyDeployment(String project, String credentialsId, String podReplicas){
 
 // Gte Docker Registry Service Cluster IP
 def getIP(String lookup){
-    def dns = $/getent hosts ${lookup} | awk $'{ print $$1 }$' > registry/$
+    def dns = $/getent hosts ${lookup} | awk $'{ print $$1 } $' > registry/$
     sh dns
     registry = readFile 'registry'
     registry = token.trim()
