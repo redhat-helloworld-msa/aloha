@@ -37,6 +37,7 @@ node {
     echo "Skip Tests is: ${SKIP_TESTS}"
     echo "Project per Dev Build is: ${PROJECT_PER_DEV_BUILD}"
     echo "Project per Test Build is: ${PROJECT_PER_TEST_BUILD}"
+    echo "Production Project Name is: ${PROD_PROJECT_NAME}"
 
     stage 'Git checkout'
     echo 'Checking out git repository'
