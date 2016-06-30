@@ -2,7 +2,7 @@ node {
 
     properties([
         [$class: 'ParametersDefinitionProperty', parameterDefinitions: [
-            [$class: 'StringParameterDefinition', name: 'PROJECT_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
+            [$class: 'StringParameterDefinition', name: 'APP_NAME', defaultValue: 'aloha', description: "Project name - all resources use this name as a lebel"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_MASTER', defaultValue: 'ose-fb-master.hosts.fabric8.com:8443', description: "host:port of OpenShift master API"],
             [$class: 'StringParameterDefinition', name: 'SONARQUBE', defaultValue: 'sonarqube.sonarqube.svc.cluster.local.', description: "OpenShift Sonarqube Service Name (assumes default port 9000)"],
             [$class: 'StringParameterDefinition', name: 'OPENSHIFT_REGISTRY', defaultValue: 'docker-registry.default.svc.cluster.local.', description: "OpenShift Registry Service Name (assumes default port 5000)"],
@@ -24,7 +24,7 @@ node {
     echo "Branch name is: ${env.BRANCH_NAME}"
 
     // build properties (acts as check - these echo's will fail if properties not bound)
-    echo "Project Name is: ${PROJECT_NAME}"    
+    echo "Application Name is: ${APP_NAME}"    
     echo "OpenShift Master is: ${OPENSHIFT_MASTER}"
     echo "OpenShist Registry is: ${OPENSHIFT_REGISTRY}"
     echo "Sonarqube is: ${SONARQUBE}"
@@ -41,7 +41,7 @@ node {
 
     stage 'Git checkout'
     echo 'Checking out git repository'
-    git url: "https://github.com/eformat/${PROJECT_NAME}"
+    git url: "https://github.com/eformat/${APP_NAME}"
 
     // tools
     def mvnHome = tool 'M3'
@@ -54,16 +54,16 @@ node {
 
     def devProject = ''
     if ("${PROJECT_PER_DEV_BUILD}"=='true') {
-        devProject = "${PROJECT_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        devProject = "${APP_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
     } else {
-        devProject = "${PROJECT_NAME}-dev"
+        devProject = "${APP_NAME}-dev"
     }
 
     def testProject = ''
     if ("${PROJECT_PER_TEST_BUILD}"=='true') {
-        testProject = "${PROJECT_NAME}-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        testProject = "${APP_NAME}-qa-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
     } else {
-        testProject = "${PROJECT_NAME}-qa"
+        testProject = "${APP_NAME}-qa"
     }    
 
     stage 'Build image and deploy in Dev'
@@ -84,7 +84,7 @@ node {
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
                     echo 'run sonar tests'
                     sonarIP = getIP("${SONARQUBE}")
-                    sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${PROJECT_NAME} -Dsonar.projectName=${PROJECT_NAME} -Dsonar.host.url=http://${sonarIP}:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
+                    sh "${sonarHome}/bin/sonar-scanner -Dsonar.projectKey=${APP_NAME} -Dsonar.projectName=${APP_NAME} -Dsonar.host.url=http://${sonarIP}:9000 -Dsonar.login=admin -Dsonar.password=admin -Dsonar.projectVersion=1.0.0-SNAPSHOT -Dsonar.sources=src/main"
                     //sh "${mvnHome}/bin/mvn -Dsonar.scm.disabled=True -Dsonar.jdbc.username=$USERNAME -Dsonar.jdbc.password=$PASSWORD sonar:sonar"
                 }
             }, seleniumTests: {
@@ -93,7 +93,7 @@ node {
                 // sh "${mvnHome}/bin/mvn test"
             }, owaspAnalysis: {
                 echo 'This stage checks dependencies for vulnerabilities'
-                build job: "${PROJECT_NAME}-dependency-check", wait: true
+                build job: "${APP_NAME}-dependency-check", wait: true
             }, failFast: true
         )
     }
@@ -131,8 +131,8 @@ def deleteProject(String project, String credentialsId){
 // Creates a Build and triggers it
 def buildProject(String project, String credentialsId, String replicas){
     projectSet(project, credentialsId)
-    sh "oc new-build --binary --name=${PROJECT_NAME} -l app=${PROJECT_NAME} || echo 'Build exists'"
-    sh "oc start-build ${PROJECT_NAME} --from-dir=. --follow --wait=true"
+    sh "oc new-build --binary --name=${APP_NAME} -l app=${APP_NAME} || echo 'Build exists'"
+    sh "oc start-build ${APP_NAME} --from-dir=. --follow --wait=true"
     appDeploy(project, 'latest', replicas)
 }
 
@@ -140,7 +140,7 @@ def buildProject(String project, String credentialsId, String replicas){
 def deployProject(String origProject, String project, String origCredentialsId, String credentialsId, String tag, String replicas){
     // tag image and give upstream project view and image pull access
     projectSet(origProject, origCredentialsId)
-    sh "oc tag ${origProject}/${PROJECT_NAME}:latest ${origProject}/${PROJECT_NAME}:${tag}"
+    sh "oc tag ${origProject}/${APP_NAME}:latest ${origProject}/${APP_NAME}:${tag}"
     sh "oc policy add-role-to-user system:image-puller system:serviceaccount:${project}:default -n ${origProject}"
 
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: "${credentialsId}", usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
@@ -167,25 +167,25 @@ def appDeploy(String project, String tag, String replicas){
     if (fileExists('status')) {
         sh "rm -f status"
     }
-    sh "oc new-app --image-stream ${project}/${PROJECT_NAME}:${tag} -l app=${PROJECT_NAME},hystrix.enabled=true,group=msa,project=${PROJECT_NAME},provider=fabric8 || echo \$? > status"
+    sh "oc new-app --image-stream ${project}/${APP_NAME}:${tag} -l app=${APP_NAME},hystrix.enabled=true,group=msa,project=${APP_NAME},provider=fabric8 || echo \$? > status"
         def ret = 0
     if (fileExists('status')) {
         // app exists - non zero exit code
         sh "echo 'Application already Exists'"
         // patch dc with current project rolling deploy is default strategy
         registryIP = getIP("${OPENSHIFT_REGISTRY}")
-        sh "oc set triggers dc/${PROJECT_NAME} --manual"
-        def patch1 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${PROJECT_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${PROJECT_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"image\":\"${registryIP}:5000$/${project}$/${PROJECT_NAME}:${tag}\"}]}}}}$'/$
+        sh "oc set triggers dc/${APP_NAME} --manual"
+        def patch1 = $/oc patch dc/"${APP_NAME}" -p $'{\"spec\":{\"triggers\":[{\"type\": \"ConfigChange\"},{\"type\":\"ImageChange\",\"imageChangeParams\":{\"automatic\":true,\"containerNames\":[\"${APP_NAME}\"],\"from\":{\"kind\":\"ImageStreamTag\",\"namespace\":\"${project}\",\"name\":\"${APP_NAME}:${tag}\"}}}]}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${APP_NAME}\",\"image\":\"${registryIP}:5000$/${project}$/${APP_NAME}:${tag}\"}]}}}}$'/$
         sh patch1
-        sh "oc deploy dc/${PROJECT_NAME} --latest"
-        sh "oc set triggers dc/${PROJECT_NAME} --auto"
+        sh "oc deploy dc/${APP_NAME} --latest"
+        sh "oc set triggers dc/${APP_NAME} --auto"
     } else {
         // new application
-        def patch2 = $/oc patch dc/"${PROJECT_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${PROJECT_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
+        def patch2 = $/oc patch dc/"${APP_NAME}" -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${APP_NAME}\",\"ports\":[{\"containerPort\":8778,\"name\":\"jolokia\"}]}]}}}}$' -p $'{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"${APP_NAME}\",\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":8080}}}]}}}}$'/$
         sh patch2
     }
-    sh "oc expose service ${PROJECT_NAME} || echo 'Service already exposed'"
-    sh "oc scale dc/${PROJECT_NAME} --replicas ${replicas}"
+    sh "oc expose service ${APP_NAME} || echo 'Service already exposed'"
+    sh "oc scale dc/${APP_NAME} --replicas ${replicas}"
 }
 
 // Get Token for Openshift Plugin authToken
@@ -204,7 +204,7 @@ def getToken(String credentialsId){
 def verifyDeployment(String project, String credentialsId, String podReplicas){
     projectSet(project, credentialsId)
     def authToken = getToken(credentialsId)    
-    openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: "${PROJECT_NAME}", replicaCount:"${podReplicas}", verifyReplicaCount: 'true', waitTime: '180000')
+    openShiftVerifyDeployment(authToken: "${authToken}", namespace: "${project}", depCfg: "${APP_NAME}", replicaCount:"${podReplicas}", verifyReplicaCount: 'true', waitTime: '180000')
 }
 
 // Get A Service Cluster IP
