@@ -71,7 +71,7 @@ node {
     buildProject("${devProject}", "${CRED_OPENSHIFT_DEV}", "${DEV_POD_NUMBER}")
 
     stage 'Verify deployment in Dev'
-    verifyDeployment("${devProjec}", "${CRED_OPENSHIFT_DEV}", '1')
+    verifyDeployment("${devProject}", "${CRED_OPENSHIFT_DEV}", '1')
 
     if ("${SKIP_TESTS}"=='false') {
         stage 'Automated tests'
