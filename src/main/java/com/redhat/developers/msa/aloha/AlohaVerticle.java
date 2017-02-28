@@ -25,24 +25,23 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
 import com.github.kennedyoliveira.hystrix.contrib.vertx.metricsstream.EventMetricsStreamHandler;
-import com.github.kristofa.brave.Brave;
-import com.github.kristofa.brave.Brave.Builder;
-import com.github.kristofa.brave.EmptySpanCollectorMetricsHandler;
-import com.github.kristofa.brave.ServerRequestInterceptor;
-import com.github.kristofa.brave.ServerSpan;
-import com.github.kristofa.brave.http.DefaultSpanNameProvider;
-import com.github.kristofa.brave.http.HttpServerRequestAdapter;
-import com.github.kristofa.brave.http.HttpServerResponseAdapter;
-import com.github.kristofa.brave.http.HttpSpanCollector;
-import com.github.kristofa.brave.httpclient.BraveHttpRequestInterceptor;
-import com.github.kristofa.brave.httpclient.BraveHttpResponseInterceptor;
+import com.redhat.developers.msa.aloha.tracing.AlohaHttpRequestInterceptor;
+import com.redhat.developers.msa.aloha.tracing.AlohaHttpResponseInterceptor;
+import com.redhat.developers.msa.aloha.tracing.HttpHeadersExtractAdapter;
+import com.redhat.developers.msa.aloha.tracing.TracerResolver;
 
 import feign.Logger;
 import feign.Logger.Level;
 import feign.httpclient.ApacheHttpClient;
 import feign.hystrix.HystrixFeign;
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
+import io.opentracing.tag.Tags;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -56,36 +55,49 @@ import io.vertx.ext.web.handler.JWTAuthHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 
 public class AlohaVerticle extends AbstractVerticle {
+    private static final String TRACING_REQUEST_SPAN = "tracing.requestSpan";
+    private final Tracer tracer = TracerResolver.getTracer();
 
-    private static Brave BRAVE = null;
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        vertx.deployVerticle(new AlohaVerticle());
+    }
 
     public AlohaVerticle() {
-        String zipkingServer = System.getenv("ZIPKIN_SERVER_URL");
-        Builder builder = new Brave.Builder("aloha");
-        if (null == zipkingServer) {
-            // Default configuration
-            BRAVE = builder.build();
-            System.out.println("No ZIPKIN_SERVER_URL defined. Printing zipkin traces to console.");
-        } else {
-            // Brave configured for a Server
-            BRAVE = builder.spanCollector(HttpSpanCollector.create(System.getenv("ZIPKIN_SERVER_URL"),
-                new EmptySpanCollectorMetricsHandler()))
-                .build();
-        }
     }
 
     @Override
     public void start() throws Exception {
         Router router = Router.router(vertx);
         router.route().handler(ctx -> {
-            // note: this is *not* an example of how to properly integrate vert.x with zipkin
-            // for a more appropriate way to do that, check the vert.x documentation
-            ServerRequestInterceptor serverRequestInterceptor = BRAVE.serverRequestInterceptor();
-            serverRequestInterceptor.handle(new HttpServerRequestAdapter(new VertxHttpServerRequest(ctx.request()), new DefaultSpanNameProvider()));
-            ctx.data().put("zipkin.span", BRAVE.serverSpanThreadBinder().getCurrentServerSpan());
+            // first, we build or rebuild a context based on the request data
+            // there are two possible scenarios here: the user is calling this endpoint directly,
+            // or this endpoint is being called by another service, like /api/hola-chaining .
+            // If we are being called directly, this "extract" will not find any trace state and will create a new context
+            // from scratch.
+            // If we are being called by Hola, then we should have some HTTP headers with the trace state (trace ID), on which case
+            // we create a span context with that information.
+            SpanContext spanContext = tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpHeadersExtractAdapter(ctx.request().headers()));
+
+            // now that we have the span context, we create a "child" span for this request
+            Span requestSpan = tracer.buildSpan(ctx.request().method().name())
+                    .asChildOf(spanContext)
+                    .start();
+
+            Tags.HTTP_URL.set(requestSpan, ctx.request().absoluteURI());
+            // we store the request span within the request data, for consumption on children spans that we might need
+            ctx.data().put(TRACING_REQUEST_SPAN, requestSpan);
+
+            // continue with the request processing
             ctx.next();
-            ctx.addBodyEndHandler(v -> BRAVE.serverResponseInterceptor().handle(new HttpServerResponseAdapter(() -> ctx.response().getStatusCode())));
+
+            // before the request finishes, we want to mark the request span as finished as well
+            ctx.addBodyEndHandler(v -> {
+                Tags.HTTP_STATUS.set(requestSpan, ctx.response().getStatusCode());
+                requestSpan.finish();
+            });
         });
+
         router.route().handler(BodyHandler.create());
         router.route().handler(CorsHandler.create("*")
             .allowedMethods(new HashSet<>(Arrays.asList(HttpMethod.values())))
@@ -103,9 +115,10 @@ public class AlohaVerticle extends AbstractVerticle {
                     "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArfmb1i36YGxYxusjzpNxmw9a/+M40naa5RxtK826nitmWESF9XiXm6bHLWmRQyhAZluFK4RZDLhQJFZTLpC/w8HdSDETYGqnrP04jL3/pV0Mw1ReKSpzi3tIde+04xGuiQM6nuR84iRraLxtoNyIiqFmHy5pmI9hQhctfZNOVvggntnhXdt/VKuguBXqitFwGbfEgrJTeRvnTkK+rR5MsRDHA3iu2ZYaM4YNAoDbqGyoI4Jdv5Kl1LsP3qESYNeagRz6pIfDZWOoJ58p/TldVt2h70S1bzappbgs8ZbmJXg+pHWcKvNutp5y8nYw30qzU73pX6DW9JS936OB6PiU0QIDAQAB"));
             router.route("/api/aloha-secured").handler(JWTAuthHandler.create(jwt));
         }
+
         router.get("/api/aloha-secured").handler(ctx -> {
             User user = ctx.user();
-            ctx.response().end("This is a secured resource. You're logged as " + user.principal().getString("name"));   
+            ctx.response().end("This is a secured resource. You're logged as " + user.principal().getString("name"));
         });
 
         // Aloha Chained Endpoint
@@ -153,24 +166,27 @@ public class AlohaVerticle extends AbstractVerticle {
      * @return The feign pointing to the service URL and with Hystrix fallback.
      */
     private BonjourService getNextService(RoutingContext context) {
-        final String serviceName = "bonjour";
-        // This stores the Original/Parent ServerSpan from ZiPkin.
-        final ServerSpan serverSpan = (ServerSpan) context.data().get("zipkin.span");
-        final CloseableHttpClient httpclient =
-            HttpClients.custom()
-                .addInterceptorFirst(new BraveHttpRequestInterceptor(BRAVE.clientRequestInterceptor(), new DefaultSpanNameProvider()))
-                .addInterceptorFirst(new BraveHttpResponseInterceptor(BRAVE.clientResponseInterceptor()))
-                .build();
-        final String url = String.format("http://%s:8080/", serviceName);
-        return HystrixFeign.builder()
-            // Use apache HttpClient which contains the ZipKin Interceptors
-            .client(new ApacheHttpClient(httpclient))
-            // Bind Zipkin Server Span to Feign Thread, but this probably won't work in a real-world scenario
-            // as a concurrent request might override the value set to this thread
-            .requestInterceptor((t) -> BRAVE.serverSpanThreadBinder().setCurrentSpan(serverSpan))
-            .logger(new Logger.ErrorLogger()).logLevel(Level.BASIC)
-            .target(BonjourService.class, url,
-                () -> "Bonjour response (fallback)");
-    }
+        String url = System.getenv("BONJOUR_SERVER_URL");
+        if (null == url || url.isEmpty()) {
+            url = String.format("http://%s:%s", System.getenv("BONJOUR_SERVICE_HOST"), System.getenv("BONJOUR_SERVICE_PORT"));
+        }
 
+        // as we are calling a service somewhere else, it's a good idea to instrument the request
+        // with the trace information, so that we can get a distributed tracing information!
+        // we stored the spanContext for this request on the context.data, so, we retrieve it first
+        Span parentSpan = (Span) context.data().get(TRACING_REQUEST_SPAN);
+        Span span = tracer.buildSpan("GET").asChildOf(parentSpan).start();
+
+        // note that we add our two interceptors to the http client, so that we can add our trace state
+        // and mark the trace as finished once we get the answer
+        final CloseableHttpClient httpclient = HttpClients.custom()
+                .addInterceptorFirst(new AlohaHttpRequestInterceptor(span))
+                .addInterceptorFirst(new AlohaHttpResponseInterceptor(span))
+                .build();
+
+        return HystrixFeign.builder()
+                .logger(new Logger.ErrorLogger()).logLevel(Level.BASIC)
+                .client(new ApacheHttpClient(httpclient))
+                .target(BonjourService.class, url, () -> "Bonjour response (fallback)");
+    }
 }
