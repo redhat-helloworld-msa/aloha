@@ -93,6 +93,12 @@
 			<groupId>com.github.kennedyoliveira</groupId>
 			<artifactId>hystrix-vertx-metrics-stream</artifactId>
 			<version>${hystrix.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>io.vertx</groupId>
+					<artifactId>vertx-unit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- OpenTracing -->
