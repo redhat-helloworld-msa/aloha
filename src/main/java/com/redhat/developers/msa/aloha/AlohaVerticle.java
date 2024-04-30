@@ -63,8 +63,8 @@ public class AlohaVerticle extends AbstractVerticle {
 
         router.route().handler(BodyHandler.create());
         router.route().handler(CorsHandler.create("*")
-            .allowedMethods(new HashSet<>(Arrays.asList(HttpMethod.values())))
-            .allowedHeader("Origin, X-Requested-With, Content-Type, Accept, Authorization"));
+                .allowedMethods(new HashSet<>(Arrays.asList(HttpMethod.values())))
+                .allowedHeader("Origin, X-Requested-With, Content-Type, Accept, Authorization"));
 
         // Aloha EndPoint
         router.get("/api/aloha").handler(ctx -> ctx.response().end(aloha()));
@@ -74,23 +74,19 @@ public class AlohaVerticle extends AbstractVerticle {
         if (keycloackServer != null) {
             // Create a JWT Auth Provider
             JWTAuth jwt = JWTAuth.create(vertx, new JsonObject()
-                .put("public-key",
-                    "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArfmb1i36YGxYxusjzpNxmw9a/+M40naa5RxtK826nitmWESF9XiXm6bHLWmRQyhAZluFK4RZDLhQJFZTLpC/w8HdSDETYGqnrP04jL3/pV0Mw1ReKSpzi3tIde+04xGuiQM6nuR84iRraLxtoNyIiqFmHy5pmI9hQhctfZNOVvggntnhXdt/VKuguBXqitFwGbfEgrJTeRvnTkK+rR5MsRDHA3iu2ZYaM4YNAoDbqGyoI4Jdv5Kl1LsP3qESYNeagRz6pIfDZWOoJ58p/TldVt2h70S1bzappbgs8ZbmJXg+pHWcKvNutp5y8nYw30qzU73pX6DW9JS936OB6PiU0QIDAQAB"));
+                    .put("public-key",
+                            "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArfmb1i36YGxYxusjzpNxmw9a/+M40naa5RxtK826nitmWESF9XiXm6bHLWmRQyhAZluFK4RZDLhQJFZTLpC/w8HdSDETYGqnrP04jL3/pV0Mw1ReKSpzi3tIde+04xGuiQM6nuR84iRraLxtoNyIiqFmHy5pmI9hQhctfZNOVvggntnhXdt/VKuguBXqitFwGbfEgrJTeRvnTkK+rR5MsRDHA3iu2ZYaM4YNAoDbqGyoI4Jdv5Kl1LsP3qESYNeagRz6pIfDZWOoJ58p/TldVt2h70S1bzappbgs8ZbmJXg+pHWcKvNutp5y8nYw30qzU73pX6DW9JS936OB6PiU0QIDAQAB"));
             router.route("/api/aloha-secured").handler(JWTAuthHandler.create(jwt));
         }
         router.get("/api/aloha-secured").handler(ctx -> {
             User user = ctx.user();
-            ctx.response().end("This is a secured resource. You're logged as " + user.principal().getString("name"));   
+            ctx.response().end("This is a secured resource. You're logged as " + user.principal().getString("name"));
         });
 
         // Aloha Chained Endpoint
         router.get("/api/aloha-chaining").handler(ctx -> alohaChaining(ctx, (list) -> ctx.response()
-            .putHeader("Content-Type", "application/json")
-            .end(Json.encode(list))));
-
-
-        // Hystrix Stream Endpoint
-        router.get(EventMetricsStreamHandler.DEFAULT_HYSTRIX_PREFIX).handler(EventMetricsStreamHandler.createHandler());
+                .putHeader("Content-Type", "application/json")
+                .end(Json.encode(list))));
 
         // Static content
         router.route("/*").handler(StaticHandler.create());
@@ -105,22 +101,23 @@ public class AlohaVerticle extends AbstractVerticle {
     }
 
     private void alohaChaining(RoutingContext context, Handler<List<String>> resultHandler) {
-        vertx.<String> executeBlocking(
-            // Invoke the service in a worker thread, as it's blocking.
-            future -> future.complete(getNextService(context).bonjour()),
-            ar -> {
-                // Back to the event loop
-                // result cannot be null, hystrix would have called the fallback.
-                String result = ar.result();
-                List<String> greetings = new ArrayList<>();
-                greetings.add(aloha());
-                greetings.add(result);
-                resultHandler.handle(greetings);
-            });
+        vertx.<String>executeBlocking(
+                // Invoke the service in a worker thread, as it's blocking.
+                future -> future.complete(getNextService(context).bonjour()),
+                ar -> {
+                    // Back to the event loop
+                    // result cannot be null, hystrix would have called the fallback.
+                    String result = ar.result();
+                    List<String> greetings = new ArrayList<>();
+                    greetings.add(aloha());
+                    greetings.add(result);
+                    resultHandler.handle(greetings);
+                });
     }
 
     /**
-     * This is were the "magic" happens: it creates a Feign, which is a proxy interface for remote calling a REST endpoint with
+     * This is were the "magic" happens: it creates a Feign, which is a proxy
+     * interface for remote calling a REST endpoint with
      * Hystrix fallback support.
      *
      * @return The feign pointing to the service URL and with Hystrix fallback.
@@ -128,13 +125,13 @@ public class AlohaVerticle extends AbstractVerticle {
     private BonjourService getNextService(RoutingContext context) {
         final Span serverSpan = context.get(TracingConfiguration.ACTIVE_SPAN);
         return HystrixFeign.builder()
-            // Use apache HttpClient which contains the ZipKin Interceptors
-            .client(new TracingClient(new ApacheHttpClient(HttpClientBuilder.create().build()), tracer))
-            // bind span to current thread
-            .requestInterceptor((t) -> DefaultSpanManager.getInstance().activate(serverSpan))
-            .logger(new Logger.ErrorLogger()).logLevel(Level.BASIC)
-            .target(BonjourService.class, "http://bonjour:8080/",
-                () -> "Bonjour response (fallback)");
+                // Use apache HttpClient which contains the ZipKin Interceptors
+                .client(new TracingClient(new ApacheHttpClient(HttpClientBuilder.create().build()), tracer))
+                // bind span to current thread
+                .requestInterceptor((t) -> DefaultSpanManager.getInstance().activate(serverSpan))
+                .logger(new Logger.ErrorLogger()).logLevel(Level.BASIC)
+                .target(BonjourService.class, "http://bonjour:8080/",
+                        () -> "Bonjour response (fallback)");
     }
 
 }

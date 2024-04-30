@@ -4,18 +4,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import com.uber.jaeger.metrics.Metrics;
-import com.uber.jaeger.metrics.NullStatsReporter;
-import com.uber.jaeger.metrics.StatsFactoryImpl;
-import com.uber.jaeger.reporters.RemoteReporter;
-import com.uber.jaeger.samplers.ProbabilisticSampler;
-import com.uber.jaeger.senders.Sender;
-import com.uber.jaeger.senders.UdpSender;
-
-import io.opentracing.NoopTracerFactory;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.tracerresolver.internal.JaegerTracerFactory;
+import io.jaegertracing.tracerresolver.internal.JaegerTracerResolver;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
+import io.opentracing.contrib.tracerresolver.TracerResolver;
+import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.propagation.Format;
 import io.opentracing.propagation.TextMap;
 import io.opentracing.tag.Tags;
@@ -30,27 +26,22 @@ public class TracingConfiguration {
     public static final String ACTIVE_SPAN = AlohaVerticle.class + ".activeSpan";
     public static final Tracer tracer = tracer();
 
-    private TracingConfiguration() {}
+    private TracingConfiguration() {
+    }
 
     private static Tracer tracer() {
-        String jaegerURL = System.getenv("JAEGER_SERVER_HOSTNAME");
+        String jaegerURL = System.getenv("JAEGER_SERVICE_NAME");
         if (jaegerURL != null) {
             System.out.println("Using Jaeger tracer");
             return jaegerTracer(jaegerURL);
         }
-
 
         System.out.println("Using Noop tracer");
         return NoopTracerFactory.create();
     }
 
     private static Tracer jaegerTracer(String url) {
-        Sender sender = new UdpSender(url, 0, 0);
-        return new com.uber.jaeger.Tracer.Builder(SERVICE_NAME,
-                new RemoteReporter(sender, 100, 50,
-                        new Metrics(new StatsFactoryImpl(new NullStatsReporter()))),
-                new ProbabilisticSampler(1.0))
-                .build();
+        return new JaegerTracerFactory().getTracer();
     }
 
     public static void tracingHandler(RoutingContext routingContext) {
@@ -59,8 +50,10 @@ public class TracingConfiguration {
             public Iterator<Map.Entry<String, String>> iterator() {
                 return routingContext.request().headers().iterator();
             }
+
             @Override
-            public void put(String key, String value) {}
+            public void put(String key, String value) {
+            }
         });
 
         Span span = tracer.buildSpan(routingContext.request().method().toString())

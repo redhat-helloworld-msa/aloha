@@ -14,7 +14,8 @@
 	See the License for the specific language governing permissions and
 	limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -53,6 +54,18 @@
 		<!-- There is kind of issue honoring JAVA_OPTIONS with fabric8-s2i images -->
 		<fabric8.generator.from>fabric8/s2i-java</fabric8.generator.from>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.opentelemetry</groupId>
+				<artifactId>opentelemetry-bom</artifactId>
+				<version>1.37.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -104,15 +117,18 @@
 		<!-- OpenTracing -->
 		<dependency>
 			<groupId>io.opentracing</groupId>
-			<artifactId>opentracing-noop</artifactId>
-			<version>${version.opentracing}</version>
+			<artifactId>opentracing-api</artifactId>
+			<version>0.33.0</version>
 		</dependency>
-
-		<!-- OpenTracing implementation - Jaeger -->
 		<dependency>
-			<groupId>com.uber.jaeger</groupId>
-			<artifactId>jaeger-core</artifactId>
-			<version>${version.jaeger}</version>
+			<groupId>io.opentracing</groupId>
+			<artifactId>opentracing-util</artifactId>
+			<version>0.33.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jaegertracing</groupId>
+			<artifactId>jaeger-client</artifactId>
+			<version>1.8.1</version>
 		</dependency>
 	</dependencies>
 
@@ -154,44 +170,6 @@
 							<outputFile>${project.build.directory}/${project.artifactId}-fat.jar
 							</outputFile>
 						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>io.fabric8</groupId>
-				<artifactId>fabric8-maven-plugin</artifactId>
-				<version>3.5.30</version>
-				<configuration>
-					<resources>
-						<labels>
-							<all>
-								<property>
-									<name>app</name>
-									<value>aloha</value>
-								</property>
-								<property>
-									<name>hystrix.enabled</name>
-									<value>true</value>
-								</property>
-							</all>
-						</labels>
-					</resources>
-					<enricher>
-						<config>
-							<vertx-health-check>
-								<path>/api/health</path>
-							</vertx-health-check>
-						</config>
-					</enricher>
-				</configuration>
-				<executions>
-					<execution>
-						<id>fmp</id>
-						<goals>
-							<goal>resource</goal>
-							<goal>helm</goal>
-							<goal>build</goal>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>
